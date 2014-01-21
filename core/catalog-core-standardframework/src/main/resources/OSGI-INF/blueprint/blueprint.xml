@@ -48,6 +48,9 @@
 	<bean id="catalogProviderSortedList" class="ddf.catalog.util.impl.SortedServiceList">
 		<argument ref="blueprintBundleContext" />
 	</bean>	
+	<bean id="resourceReaderSortedList" class="ddf.catalog.util.SortedServiceList">
+		<argument ref="blueprintBundleContext" />
+	</bean>	
 					
 
 	<!-- END of Sorted Plugin lists -->
@@ -128,7 +131,10 @@
 	</reference-list>
 
 	<reference-list id="resourceReaders" interface="ddf.catalog.resource.ResourceReader"
-		availability="optional" />
+		availability="optional" >
+		<referece-listener bind-method="bindPlugin"
+			unbind-metod="unbindPlugin" ref="resourceReaderSortedList"/>
+	</reference-list>
 
 	<bean id="pool" class="java.util.concurrent.Executors"
 		factory-method="newCachedThreadPool" />
@@ -165,7 +171,7 @@
 		<argument ref="postResourceSortedList" />
 		<argument ref="connectedSources" />
 		<argument ref="federatedSources" />
-		<argument ref="resourceReaders" />
+		<argument ref="resourceReaderSortedList" />
 		<argument ref="sorted" />
 		<argument ref="pool" />
 		<argument ref="sourcePoller" />
