@@ -1383,34 +1383,38 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
             throw new ResourceNotFoundException("Unable to find resource due to null URI");
         }
 
-        for(ResourceReader reader : resourceReaders){
-        	if (reader != null){     		
-	            String scheme = resourceUri.getScheme();
-	            if (reader.getSupportedSchemes().contains(scheme)) {
-	                try {
-	                    logger.debug("Found an acceptable resource reader (" + reader.getId()
-	                            + ") for URI " + resourceUri.toASCIIString());
-	                    resource = reader.retrieveResource(resourceUri, properties);
-	                    if(resource != null){
-	                    	break;
-	                    } else {
-	                        logger.info("Resource returned from ResourceReader " + reader.getId()
-	                                + " was null.  Checking other readers for URI: " + resourceUri);
-	                    }
-	                } catch (ResourceNotFoundException e) {
-	                    logger.debug("Enterprise Search: Product not found using resource reader with name "
-	                            + reader.getId());
-	                } catch (ResourceNotSupportedException e) {
-	                    logger.debug("Enterprise Search: Product not found using resource reader with name "
-	                            + reader.getId());
-	                } catch (IOException ioe) {
-	                    logger.debug("Enterprise Search: Product not found using resource reader with name "
-	                            + reader.getId());
-	                }
-	            }
-	        }    
-        }
-        
+		for (ResourceReader reader : resourceReaders) {
+			if (reader != null) {
+				String scheme = resourceUri.getScheme();
+				if (reader.getSupportedSchemes().contains(scheme)) {
+					try {
+						logger.debug("Found an acceptable resource reader ("
+								+ reader.getId() + ") for URI "
+								+ resourceUri.toASCIIString());
+						resource = reader.retrieveResource(resourceUri,
+								properties);
+						if (resource != null) {
+							break;
+						} else {
+							logger.info("Resource returned from ResourceReader "
+									+ reader.getId()
+									+ " was null.  Checking other readers for URI: "
+									+ resourceUri);
+						}
+					} catch (ResourceNotFoundException e) {
+						logger.debug("Enterprise Search: Product not found using resource reader with name "
+								+ reader.getId());
+					} catch (ResourceNotSupportedException e) {
+						logger.debug("Enterprise Search: Product not found using resource reader with name "
+								+ reader.getId());
+					} catch (IOException ioe) {
+						logger.debug("Enterprise Search: Product not found using resource reader with name "
+								+ reader.getId());
+					}
+				}
+			}
+		}
+
         if (resource == null) {
             throw new ResourceNotFoundException(
                     "Resource Readers could not find resource (or returned null resource) for URI: "
