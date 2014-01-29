@@ -136,8 +136,8 @@
 
 	<reference-list id="resourceReaders" interface="ddf.catalog.resource.ResourceReader"
 		availability="optional" >
-		<referece-listener bind-method="bindPlugin"
-			unbind-metod="unbindPlugin" ref="resourceReaderSortedList"/>
+		<reference-listener bind-method="bindPlugin"
+			unbind-method="unbindPlugin" ref="resourceReaderSortedList"/>
 	</reference-list>
 
 	<bean id="pool" class="java.util.concurrent.Executors"
