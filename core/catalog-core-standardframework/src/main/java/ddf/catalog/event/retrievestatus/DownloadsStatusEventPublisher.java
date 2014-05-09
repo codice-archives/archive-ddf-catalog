@@ -43,7 +43,7 @@ public class DownloadsStatusEventPublisher {
         STARTED, RETRYING, CANCELLED, FAILED, COMPLETE;
     }
 
-    private static XLogger logger = new XLogger(LoggerFactory.getLogger(DownloadsStatusEventPublisher.class));
+    private static final XLogger logger = new XLogger(LoggerFactory.getLogger(DownloadsStatusEventPublisher.class));
     private static final DateFormat formatter = new SimpleDateFormat("HH:mm:ss:SSS");
 
     private EventAdmin eventAdmin;
