@@ -520,7 +520,6 @@ public class ReliableResourceDownloadManager implements Runnable {
                         downloadState.setDownloadState(DownloadState.CANCELED);
                         LOGGER.debug("Cancelling resourceRetrievalMonitor");
                         resourceRetrievalMonitor.cancel();
-                        eventListener.removeDownloadIdentifier(downloadIdentifier);
                         eventPublisher.postRetrievalStatus(resourceResponse,
                                 ProductRetrievalStatus.CANCELLED, metacard, "",
                                 reliableResourceStatus.getBytesRead(), downloadIdentifier);
