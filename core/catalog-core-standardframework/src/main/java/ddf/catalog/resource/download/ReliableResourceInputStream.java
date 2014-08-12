@@ -172,7 +172,7 @@ public class ReliableResourceInputStream extends InputStream {
                     (fbosCount >= fbosBytesRead && downloadState.getDownloadState()
                             != DownloadManagerState.DownloadState.FAILED &&
                             downloadState.getDownloadState()
-                                    != DownloadManagerState.DownloadState.CANCELED
+							!= DownloadManagerState.DownloadState.CANCELED
                             && downloadState.getDownloadState() != null)) {
                 numBytesRead = readFromFbosInputStream(b, off, len);
 
@@ -190,6 +190,7 @@ public class ReliableResourceInputStream extends InputStream {
                     }
                 }
             }
+
             if (downloadState.getDownloadState() == DownloadManagerState.DownloadState.FAILED ||
                     downloadState.getDownloadState() == DownloadManagerState.DownloadState.CANCELED) {
                 LOGGER.debug(
