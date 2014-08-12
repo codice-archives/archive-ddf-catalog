@@ -220,14 +220,10 @@ public class ReliableResourceInputStream extends InputStream {
     }
 
     private boolean isFbosCompletelyRead(int numBytesRead, long fbosCount) {
-        if (numBytesRead == -1 && fbosCount == fbosBytesRead &&
+        return (numBytesRead == -1 && fbosCount == fbosBytesRead &&
                 (downloadState.getDownloadState() == DownloadManagerState.DownloadState.COMPLETED ||
                         downloadState.getDownloadState()
-                                == DownloadManagerState.DownloadState.FAILED)) {
-            return true;
-        }
-
-        return false;
+                                == DownloadManagerState.DownloadState.FAILED));
     }
 
     private int readFromFbosInputStream(byte[] b, int off, int len) throws IOException {
