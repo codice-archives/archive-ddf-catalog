@@ -82,7 +82,6 @@ public class DownloadsStatusEventListener implements EventHandler {
 
         if (null != downloadIdentifier && null != resourceResponse) {
             String id = downloadIdentifier;
-
             InputStream is = resourceResponse.getResource().getInputStream();
             if (null != is) {
                 LOGGER.debug("added ==> {}:{} ", id, is);
@@ -107,6 +106,7 @@ public class DownloadsStatusEventListener implements EventHandler {
 
         if (null != downloadIdentifier) {
             String id = downloadIdentifier;
+
             if (null != downloadMap) {
                 for (Map.Entry<String, InputStream> item : downloadMap.entrySet()) {
                     if (StringUtils.equals(id, item.getKey())) {
@@ -123,7 +123,6 @@ public class DownloadsStatusEventListener implements EventHandler {
                         LOGGER.debug("  Key = {}  Value = {}", keyStr, value);
                     }
                 }
-
             }
         }
         LOGGER.debug("EXITING: {}", methodName);
