@@ -21,15 +21,19 @@ define([
     'js/view/ModalSource.view.js',
     'js/model/Service.js',
     'wreqr',
+    'text!templates/deleteModal.handlebars',
+    'text!templates/deleteSource.handlebars',
     'text!templates/sourcePage.handlebars',
     'text!templates/sourceList.handlebars',
     'text!templates/sourceRow.handlebars'
 ],
-function (ich,Marionette,_,$,ModalSource,Service,wreqr,sourcePage,sourceList,sourceRow) {
+function (ich,Marionette,_,$,ModalSource,Service,wreqr,deleteModal,deleteSource,sourcePage,sourceList,sourceRow) {
 
     var SourceView = {};
 
-	ich.addTemplate('sourcePage', sourcePage);
+    ich.addTemplate('deleteModal', deleteModal);
+    ich.addTemplate('deleteSource', deleteSource);
+    ich.addTemplate('sourcePage', sourcePage);
 	ich.addTemplate('sourceList', sourceList);
 	ich.addTemplate('sourceRow', sourceRow);
 
@@ -40,27 +44,71 @@ function (ich,Marionette,_,$,ModalSource,Service,wreqr,sourcePage,sourceList,sou
         regions: {
             editModal: '.modal-container'
         },
+        events: {
+            'change .configurationSelect' : 'changeConfiguration',
+            'click .configurationSelect' : 'handleSelector'
+        },
         initialize: function(){
             _.bindAll(this);
             this.listenTo(this.model, 'change', this.render);
-            this.$el.on('click', this.editSource);
+            this.$el.on('click', "td", this.editSource);
         },
         serializeData: function(){
             var data = {};
 
-            if (this.model && this.model.has('currentConfiguration')) {
-              data = this.model.get('currentConfiguration').toJSON();
+            if(this.model && this.model.has('currentConfiguration')){
+                data.currentConfiguration = this.model.get('currentConfiguration').toJSON();
             }
+            if(this.model && this.model.has('disabledConfigurations')){
+                data.disabledConfigurations = this.model.get('disabledConfigurations').toJSON();
+            }
+            data.name = this.model.get('name');
 
             return data;
         },
         onBeforeClose: function() {
             this.$el.off('click');
         },
+        handleSelector: function(evt) {
+            evt.stopPropagation();
+        },
         editSource: function(evt) {
             evt.stopPropagation();
             var model = this.model;
             wreqr.vent.trigger('editSource', model);
+        },
+        changeConfiguration: function(evt) {
+            var model = this.model;
+            var currentConfig = model.get('currentConfiguration');
+            var disabledConfigs = model.get('disabledConfigurations');
+            var $select = $(evt.currentTarget);
+            var optionSelected = $select.find("option:selected");
+            var valueSelected = optionSelected.val();
+            var cfgToDisable;
+
+            if (valueSelected === 'Disabled') {
+                cfgToDisable = currentConfig;
+                if (!_.isUndefined(cfgToDisable)) {
+                    cfgToDisable.makeDisableCall();
+                    model.removeConfiguration(cfgToDisable);
+                }
+            } else {
+                var cfgToEnable = disabledConfigs.find(function(cfg) {
+                    return valueSelected + "_disabled" === cfg.get('fpid');
+                });
+
+                if (cfgToEnable) {
+                    cfgToDisable = currentConfig;
+                    cfgToEnable.makeEnableCall();
+                    model.removeConfiguration(cfgToEnable);
+                    if (!_.isUndefined(cfgToDisable)) {
+                        cfgToDisable.makeDisableCall();
+                        model.removeConfiguration(cfgToDisable);
+                    }
+                }
+            }
+            wreqr.vent.trigger('refreshSources');
+            evt.stopPropagation();
         }
     });
 
@@ -74,13 +122,14 @@ function (ich,Marionette,_,$,ModalSource,Service,wreqr,sourcePage,sourceList,sou
         template: 'sourcePage',
         events: {
             'click .refreshButton' : 'refreshSources',
-            'click .addSourceLink' : 'addSource',
-            'click .editLink': 'editSource'
+            'click .removeSourceLink' : 'removeSource',
+            'click .addSourceLink' : 'addSource'
         },
         initialize: function(){
             var view = this;
             view.listenTo(wreqr.vent, 'editSource', view.editSource);
             view.listenTo(wreqr.vent, 'refreshSources', view.refreshSources);
+            view.listenTo(wreqr.vent, 'changeConfiguration', view.changeConfiguration);
         },
         regions: {
             collectionRegion: '#sourcesRegion',
@@ -104,20 +153,57 @@ function (ich,Marionette,_,$,ModalSource,Service,wreqr,sourcePage,sourceList,sou
             this.sourcesModal.show(new ModalSource.View(
                 {
                     model: model,
-                    parentModel: view.model
+                    parentModel: view.model,
+                    mode: 'edit'
                 })
             );
             this.sourcesModal.currentView.$el.modal();
+        },
+        removeSource: function() {
+            var view = this;
+            if(view.model) {
+
+                this.sourcesModal.show(new SourceView.DeleteModal({
+                    model: view.model,
+                    collection: view.model.get('collection')
+                }));
+                this.sourcesModal.currentView.$el.modal();
+            }
         },
         addSource: function() {
             var view = this;
             if(view.model) {
                 this.sourcesModal.show(new ModalSource.View({
                     model: view.model.getSourceModelWithServices(),
-                    parentModel: view.model
+                    parentModel: view.model,
+                    mode: 'add'
                 }));
                 this.sourcesModal.currentView.$el.modal();
             }
+        }
+    });
+
+    SourceView.DeleteItem = Marionette.ItemView.extend({
+        template: "deleteSource",
+        initalize: function() {
+            console.log(this.model);
+        }
+    });
+
+    SourceView.DeleteModal  = Marionette.CompositeView.extend({
+        template: 'deleteModal',
+        className: 'modal',
+        itemView: SourceView.DeleteItem,
+        itemViewContainer: '.modal-body',
+        events: {
+            'click .submit-button' : 'deleteSources'
+        },
+        initialize: function() {
+            console.log('initialize modal...');
+        },
+        deleteSources: function() {
+            console.log('deleting sources...');
+            this.$el.modal("hide");
         }
     });
 

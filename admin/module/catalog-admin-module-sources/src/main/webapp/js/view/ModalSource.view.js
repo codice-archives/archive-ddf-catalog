@@ -57,7 +57,16 @@ function (ich,Marionette,Backbone,ConfigurationEdit,Service,Utils,wreqr,_,$,moda
             details: '.modal-details',
             buttons: '.source-buttons'
         },
+        serializeData: function(){
+            var data = {};
 
+            if(this.model) {
+                data = this.model.toJSON();
+            }
+            data.mode = this.mode;
+
+            return data;
+        },
         /**
          * Initialize  the binder with the ManagedServiceFactory model.
          * @param options
@@ -66,20 +75,35 @@ function (ich,Marionette,Backbone,ConfigurationEdit,Service,Utils,wreqr,_,$,moda
             _.bindAll(this);
             this.parentModel = options.parentModel;
             this.modelBinder = new Backbone.ModelBinder();
+            this.mode = options.mode;
         },
         onRender: function() {
             var $boundData = this.$el.find('.bound-controls');
-            var currentConfig = this.model.get('currentConfiguration');
-
+            var config = this.model.get('currentConfiguration') || this.model.get('disabledConfigurations').at(0);
+            var props = config.get('properties');
+            
             this.$el.attr('role', "dialog");
             this.$el.attr('aria-hidden', "true");
             this.renderNameField();
             this.renderTypeDropdown();
-            if (!_.isNull(this.model) && !_.isUndefined(currentConfig)) {
-                this.modelBinder.bind(currentConfig.get('properties'),
-                        $boundData,
-                        Backbone.ModelBinder.createDefaultBindings($boundData, 'name'));
+            this.initRadioButtonUI(props);
+            if (!_.isNull(this.model)) {
+                this.modelBinder.bind(props, $boundData, Backbone.ModelBinder.createDefaultBindings($boundData, 'name'));
             }
+        },
+        initRadioButtonUI: function(boundModel) {
+            var $radios = this.$el.find('input[type=radio]');
+
+            _.each($radios, function(radio) {
+                var $radio = $(radio);
+                var $label = $radio.closest('label.btn');
+                
+                if (boundModel.get($radio.attr('name')) === $radio.attr('value')) {
+                    $label.addClass('active');
+                } else {
+                    $label.removeClass('active');
+                }
+            });
         },
         /**
          * Renders editable name field.
@@ -87,7 +111,7 @@ function (ich,Marionette,Backbone,ConfigurationEdit,Service,Utils,wreqr,_,$,moda
         renderNameField: function() {
             var model = this.model;
             var $sourceName = this.$(".sourceName");
-            var initialName = model.get('name') || 'New Configuration';
+            var initialName = model.get('name');
             var data = {
                 id: model.id,
                 name: 'Source Name',
@@ -226,7 +250,13 @@ function (ich,Marionette,Backbone,ConfigurationEdit,Service,Utils,wreqr,_,$,moda
                 matchFound = true;
             } else if (!_.isUndefined(disabledConfigs)) {
                 matchFound = !_.isUndefined(disabledConfigs.find(function(modelConfig) {
-                    return modelConfig.get('fpid') === fpid;
+                    //check the ID property to ensure that the config we're checking exists server side
+                    //otherwise assume it's a template/placeholder for filling in the default modal form data
+                    if (_.isUndefined(modelConfig.id)) {
+                        return false;
+                    } else {
+                        return modelConfig.get('fpid') === fpid;
+                    }
                 }));
             }
             return matchFound;
@@ -260,16 +290,16 @@ function (ich,Marionette,Backbone,ConfigurationEdit,Service,Utils,wreqr,_,$,moda
 
                 var properties = config.get('properties');
                 view.checkName(view.$('.sourceName').find('input').val().trim());
-                view.renderDetails(config, config.get('service'));
-                view.modelBinder.bind(properties, $boundData,
-                      Backbone.ModelBinder.createDefaultBindings($boundData, 'name'));
+                view.renderDetails(this.model, config.get('service'));
+                view.initRadioButtonUI(properties);
+                view.modelBinder.bind(properties, $boundData, Backbone.ModelBinder.createDefaultBindings($boundData, 'name'));
             }
         },
         findConfigFromId: function(id) {
             var model = this.model;
             var currentConfig = model.get('currentConfiguration');
             var disabledConfigs = model.get('disabledConfigurations');
-            var config = null;
+            var config;
 
             if (!_.isUndefined(currentConfig) && currentConfig.get('fpid') === id) {
                 config = currentConfig;
@@ -287,13 +317,18 @@ function (ich,Marionette,Backbone,ConfigurationEdit,Service,Utils,wreqr,_,$,moda
             return config;
         },
         renderDetails: function(model, configuration) {
-            var toDisplay = configuration.get('metatype').filter(function(mt) {
-                return !_.contains(['shortname', 'id', 'parameters'], mt.get('id'));
-            });
-            this.details.show(new ConfigurationEdit.ConfigurationCollection({
-                collection: new Service.MetatypeList(toDisplay),
-                service: configuration,
-                configuration: this.model}));
+            if (!_.isUndefined(configuration)) {
+                var toDisplay = configuration.get('metatype').filter(function(mt) {
+                    return !_.contains(['shortname', 'id', 'parameters'], mt.get('id'));
+                });
+                this.details.show(new ConfigurationEdit.ConfigurationCollection({
+                    collection: new Service.MetatypeList(toDisplay),
+                    service: configuration,
+                    configuration: this.model}));
+            } else {
+                $(this.details.el).html('');
+                $(this.buttons.el).html('');
+            }
         }
     });
 
