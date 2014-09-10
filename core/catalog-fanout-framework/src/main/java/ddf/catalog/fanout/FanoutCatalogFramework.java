@@ -14,6 +14,21 @@
  **/
 package ddf.catalog.fanout;
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.net.URI;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+
+import org.osgi.framework.BundleContext;
+import org.slf4j.LoggerFactory;
+import org.slf4j.ext.XLogger;
+
 import ddf.catalog.CatalogFramework;
 import ddf.catalog.cache.impl.CacheKey;
 import ddf.catalog.cache.impl.ResourceCache;
@@ -72,20 +87,6 @@ import ddf.catalog.source.SourceUnavailableException;
 import ddf.catalog.source.UnsupportedQueryException;
 import ddf.catalog.source.impl.SourceDescriptorImpl;
 import ddf.catalog.util.impl.SourcePoller;
-import org.osgi.framework.BundleContext;
-import org.slf4j.LoggerFactory;
-import org.slf4j.ext.XLogger;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.net.URI;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
 
 /**
  * {@link FanoutCatalogFramework} evaluates all {@link Operation}s as enterprise-wide federated
@@ -525,6 +526,9 @@ public class FanoutCatalogFramework extends CatalogFrameworkImpl {
                             if (!requestProperties.containsKey(Metacard.ID)) {
                                 requestProperties.put(Metacard.ID, metacardId);
                             }
+                            if (!requestProperties.containsKey(Metacard.RESOURCE_URI)) {
+                                requestProperties.put(Metacard.RESOURCE_URI, resourceUri);
+                            }
                         }
                     }
                 }
@@ -543,8 +547,14 @@ public class FanoutCatalogFramework extends CatalogFrameworkImpl {
                     QueryResponse queryResponse = query(queryRequest);
                     if (queryResponse.getResults().size() > 0) {
                         metacard = queryResponse.getResults().get(0).getMetacard();
-                        if (!requestProperties.containsKey(Metacard.ID) && metacard != null) {
-                            requestProperties.put(Metacard.ID, metacard.getId());
+                        if (metacard != null) {
+                            if (!requestProperties.containsKey(Metacard.ID)) {
+                                requestProperties.put(Metacard.ID, metacard.getId());
+                            }
+                            if (!requestProperties.containsKey(Metacard.RESOURCE_URI)) {
+                                requestProperties.put(Metacard.RESOURCE_URI,
+                                        metacard.getResourceURI());
+                            }
                         }
                     }
                 }
