@@ -177,10 +177,11 @@ public class SortedFederationStrategy extends AbstractFederationStrategy {
                     totalHits += sourceHits;
                     Map<String, Serializable> newSourceProperties = new HashMap<String, Serializable>();
                     newSourceProperties.put(QueryResponse.TOTAL_HITS, sourceHits);
-                    newSourceProperties
-                            .put(QueryResponse.TOTAL_RESULTS_RETURNED, sourceResults.size());
+                    newSourceProperties.put(QueryResponse.TOTAL_RESULTS_RETURNED,
+                            sourceResults.size());
 
-                    Map<String, Serializable> originalSourceProperties = sourceResponse.getProperties();
+                    Map<String, Serializable> originalSourceProperties = sourceResponse
+                            .getProperties();
                     if (originalSourceProperties != null) {
                         Serializable object = originalSourceProperties
                                 .get(QueryResponse.ELAPSED_TIME);
@@ -188,7 +189,7 @@ public class SortedFederationStrategy extends AbstractFederationStrategy {
                             newSourceProperties.put(QueryResponse.ELAPSED_TIME, (Long) object);
                             originalSourceProperties.remove(QueryResponse.ELAPSED_TIME);
                             logger.debug(
-                                    "Setting the ellapsedTime responseProperty to {} for source {}",
+                                    "Setting the elapsedTime responseProperty to {} for source {}",
                                     object, site.getId());
                         }
 
@@ -207,7 +208,7 @@ public class SortedFederationStrategy extends AbstractFederationStrategy {
                         ((List) siteListObject).add(site.getId());
                     } else {
                         siteListObject = new ArrayList<String>();
-                        ((List)siteListObject).add(site.getId());
+                        ((List) siteListObject).add(site.getId());
                         returnProperties
                                 .put(QueryResponse.SITE_LIST, (Serializable) siteListObject);
                     }
