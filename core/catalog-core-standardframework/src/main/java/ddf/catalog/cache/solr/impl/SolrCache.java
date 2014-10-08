@@ -16,6 +16,7 @@ package ddf.catalog.cache.solr.impl;
 
 import com.google.common.collect.Lists;
 import com.spatial4j.core.distance.DistanceUtils;
+
 import ddf.catalog.data.AttributeType.AttributeFormat;
 import ddf.catalog.data.Metacard;
 import ddf.catalog.data.MetacardCreationException;
@@ -35,6 +36,7 @@ import ddf.catalog.source.Source;
 import ddf.catalog.source.UnsupportedQueryException;
 import ddf.measure.Distance;
 import ddf.measure.Distance.LinearUnit;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
@@ -46,6 +48,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -144,6 +147,22 @@ public class SolrCache {
 
     private boolean solrCoreExists(SolrServer solrServer, String coreName) {
         try {
+        	if (solrServer != null) {
+        		try {
+        			SolrPingResponse resp = solrServer.ping();
+        		} catch (Exception e) {
+        			LOGGER.debug("Solr Server not available, waiting ...", e);
+        			try {
+						Thread.sleep(60000);
+					} catch (InterruptedException e1) {
+						LOGGER.error("Failure in trying to wait for Solr Server availability", e1);
+					}	
+        			LOGGER.debug("Wait for Solr Server complete.");
+        		}
+        	} else {
+        		LOGGER.debug("Solr Server is null.");
+        	}
+
             CoreAdminResponse response = CoreAdminRequest.getStatus(coreName, solrServer);
             return response.getCoreStatus(coreName).get("instanceDir") != null;
         } catch (SolrServerException e) {
