@@ -1073,6 +1073,12 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
                 }
             }
 
+            // Reset the "TOTAL_RESULTS_RETURNED" property to the possibly new size of the
+            // updated/modified list of results
+            List<Result> results = queryResponse.getResults();
+            if(null != results) {
+                queryResponse.getProperties().put(QueryResponse.TOTAL_RESULTS_RETURNED, results.size());
+            }
         } catch (RuntimeException re) {
             logger.warn("Exception during runtime while performing query", re);
             throw new UnsupportedQueryException("Exception during runtime while performing query");
