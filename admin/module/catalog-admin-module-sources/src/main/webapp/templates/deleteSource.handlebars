@@ -11,7 +11,17 @@
  *
  **/
  --}}
-<a href='#{{id}}' class='newLink' data-toggle="modal">
-    {{name}}
-</a>
-Delete Source...
+<div>
+    <a href='#{{id}}' class='newLink' data-toggle="modal">
+        {{name}}
+    </a>
+    <br>
+    <ul>
+        {{#if currentConfiguration}}
+            <li><input class="selectSourceDelete" type="checkbox" value="{{currentConfiguration.attributes.id}}"> {{currentConfiguration.attributes.name}}</li>
+        {{/if}}
+        {{#each disabledConfigurations.models}}
+            <li><input class="selectSourceDelete" type="checkbox" value="{{attributes.id}}">(Disabled) {{attributes.service.attributes.name}}</li>
+        {{/each}}
+    </ul>
+</div>

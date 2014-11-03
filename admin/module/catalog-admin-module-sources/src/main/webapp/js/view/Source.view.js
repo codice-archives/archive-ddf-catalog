@@ -115,7 +115,7 @@ function (ich,Marionette,_,$,ModalSource,Service,wreqr,deleteModal,deleteSource,
     SourceView.SourceTable = Marionette.CompositeView.extend({
         template: 'sourceList',
         itemView: SourceView.SourceRow,
-        itemViewContainer: 'tbody',
+        itemViewContainer: 'tbody'
     });
 
     SourceView.SourcePage = Marionette.Layout.extend({
@@ -184,10 +184,7 @@ function (ich,Marionette,_,$,ModalSource,Service,wreqr,deleteModal,deleteSource,
     });
 
     SourceView.DeleteItem = Marionette.ItemView.extend({
-        template: "deleteSource",
-        initalize: function() {
-            console.log(this.model);
-        }
+        template: "deleteSource"
     });
 
     SourceView.DeleteModal  = Marionette.CompositeView.extend({
@@ -198,11 +195,31 @@ function (ich,Marionette,_,$,ModalSource,Service,wreqr,deleteModal,deleteSource,
         events: {
             'click .submit-button' : 'deleteSources'
         },
-        initialize: function() {
-            console.log('initialize modal...');
-        },
         deleteSources: function() {
-            console.log('deleting sources...');
+            var view = this;
+            $(".selectSourceDelete").each(function(index, content) {
+                if (content.checked) {
+                    view.collection.each(function (item) {
+                        var currentConfig = item.get('currentConfiguration');
+                        var disableConfigs = item.get('disabledConfigurations');
+
+                        if (currentConfig) {
+                            var currentConfigID = currentConfig.get('id');
+                            if (currentConfigID === content.value) {
+                                currentConfig.destroy();
+                            }
+                        }
+
+                        if (disableConfigs && !disableConfigs.isEmpty()) {
+                            disableConfigs.each(function (disabledConfig) {
+                                if (disabledConfig.get('id') === content.value) {
+                                    disabledConfig.destroy();
+                                }
+                            });
+                        }
+                    });
+                }
+            });
             this.$el.modal("hide");
         }
     });
