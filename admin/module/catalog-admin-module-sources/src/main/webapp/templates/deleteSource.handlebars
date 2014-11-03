@@ -11,16 +11,17 @@
  *
  **/
  --}}
-<table class='table table-striped align-middle'>
-    <thead>
-        <th class="name">Name</th>
-        <th class="type">Type</th>
-        <th class="status">Status</th>
-        <th><a href="#" class="addSourceLink fa fa-plus"></a></th>
-        <th><a href="#" class="removeSourceLink fa fa-trash-o"></a></th>
-        <th><a href="#" class="refreshButton fa fa-refresh"></a></th>
-    </thead>
-    <tbody>
-
-    </tbody>
-</table>
+<div>
+    <a href='#{{id}}' class='newLink' data-toggle="modal">
+        {{name}}
+    </a>
+    <br>
+    <ul>
+        {{#if currentConfiguration}}
+            <li><input class="selectSourceDelete" type="checkbox" value="{{currentConfiguration.attributes.id}}"> {{currentConfiguration.attributes.name}}</li>
+        {{/if}}
+        {{#each disabledConfigurations.models}}
+            <li><input class="selectSourceDelete" type="checkbox" value="{{attributes.id}}">(Disabled) {{attributes.service.attributes.name}}</li>
+        {{/each}}
+    </ul>
+</div>
