@@ -1072,7 +1072,6 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
                     throw new FederationException("Query could not be executed.", e);
                 }
             }
-
         } catch (RuntimeException re) {
             logger.warn("Exception during runtime while performing query", re);
             throw new UnsupportedQueryException("Exception during runtime while performing query");
