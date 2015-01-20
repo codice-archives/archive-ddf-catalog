@@ -1,16 +1,16 @@
 /**
  * Copyright (c) Codice Foundation
- * 
+ *
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
- * 
+ *
  **/
 package ddf.catalog.source.opensearch;
 
@@ -46,6 +46,7 @@ import org.apache.abdera.model.Element;
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Feed;
 import org.apache.abdera.parser.Parser;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.cxf.jaxrs.client.Client;
 import org.apache.cxf.jaxrs.client.WebClient;
@@ -92,7 +93,7 @@ import ddf.security.encryption.EncryptionService;
 /**
  * Federated site that talks via OpenSearch to the DDF platform. Communication is usually performed
  * via https which requires a keystore and trust store to be provided.
- * 
+ *
  */
 public final class OpenSearchSource implements FederatedSource, ConfiguredService,
         ConfigurationWatcher {
@@ -137,7 +138,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
     private static final String HEADER_RANGE = "Range";
 
     public static final String BYTES_TO_SKIP = "BytesToSkip";
-    
+
     public static final String BYTES_SKIPPED = "BytesSkipped";
 
     static final String BYTES = "bytes";
@@ -170,13 +171,13 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
     private String keystorePath;
 
     private String truststorePath;
-    
+
     private long receiveTimeout = 0;
 
     /**
      * Creates an OpenSearch Site instance. Sets an initial default endpointUrl that can be
      * overwritten using the setter methods.
-     * 
+     *
      * @throws ddf.catalog.source.UnsupportedQueryException
      */
     public OpenSearchSource(FilterAdapter filterAdapter) {
@@ -267,15 +268,13 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
 
         if(canDoOpenSearch) {
 
-            Response clientResponse = client.get();
-
-            Object obj = clientResponse.getEntity();
+            InputStream responseStream = performRequest(client);
 
             response = new SourceResponseImpl(queryRequest,
                     new ArrayList<Result>());
 
-            if (obj != null) {
-                response = processResponse((InputStream) obj, queryRequest);
+            if (responseStream != null) {
+                response = processResponse(responseStream, queryRequest);
             }
         } else {
             Client restClient = openSearchConnection.newRestClient(endpointUrl,
@@ -292,14 +291,12 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
                     webClient = openSearchConnection.setSubjectOnWebClient(webClient, subject);
                 }
 
-                Response clientResponse = webClient.get();
-
-                Object obj = clientResponse.getEntity();
+                InputStream responseStream = performRequest(client);
 
                 Metacard metacard = null;
                 List<Result> resultQueue = new ArrayList<Result>();
                 try {
-                    metacard = inputTransformer.transform((InputStream) obj);
+                    metacard = inputTransformer.transform(responseStream);
                 } catch (IOException e) {
                     LOGGER.debug("Problem with transformation.", e);
                 } catch (CatalogTransformerException e) {
@@ -318,6 +315,40 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
         LOGGER.trace(methodName);
 
         return response;
+    }
+
+    /**
+     * Performs a GET request on the client and returns the entity as an InputStream.
+     *
+     * @param client Client to perform the GET request on.
+     * @return The entity of the response as an InputStream.
+     * @throws UnsupportedQueryException
+     */
+    private InputStream performRequest(WebClient client) throws UnsupportedQueryException {
+        Response clientResponse = client.get();
+
+        InputStream stream = null;
+        Object entityObj = clientResponse.getEntity();
+        if (entityObj != null) {
+            stream = (InputStream)entityObj;
+        }
+        if (Response.Status.OK.getStatusCode() != clientResponse.getStatus()) {
+            String error = new String();
+            try {
+                if (stream != null) {
+                    error = IOUtils.toString(stream);
+                }
+            } catch (IOException ioe) {
+                LOGGER.debug("Could not convert error message to a string for output.",
+                        ioe);
+            }
+            String errorMsg = "Received error code from remote source (status "
+                    + clientResponse.getStatus() + "): " + error;
+            LOGGER.warn(errorMsg);
+            throw new UnsupportedQueryException(errorMsg);
+        }
+
+        return stream;
     }
 
     // Refactored from query() and made protected so JUnit tests could be written for this logic
@@ -438,7 +469,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
     /**
      * Creates a single response from input parameters. Performs XPath operations on the document to
      * retrieve data not passed in.
-     * 
+     *
      * @param entry
      *            a single Atom entry
      * @return single response
@@ -523,7 +554,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
                     } catch (XPathExpressionException e) {
                         LOGGER.info("Unable to parse categories for contentType");
                     }
-                    
+
                 }
 
             } finally {
@@ -582,7 +613,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
 
     /**
      * Set URL of the endpoint.
-     * 
+     *
      * @param endpointUrl
      *            Full url of the endpoint.
      */
@@ -596,7 +627,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
 
     /**
      * Get the URL of the endpoint.
-     * 
+     *
      * @return
      */
     public String getEndpointUrl() {
@@ -622,7 +653,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
     /**
      * Sets the shortname for this site. This shortname is used to identify the site when performing
      * federated queries.
-     * 
+     *
      * @param shortname
      *            Name of this site.
      */
@@ -651,7 +682,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
     /**
      * Sets the boolean flag that indicates all queries executed should be to its local source only,
      * i.e., no federated or enterprise queries.
-     * 
+     *
      * @param localQueryOnly
      *            true indicates only local queries, false indicates enterprise query
      */
@@ -663,7 +694,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
     /**
      * Get the boolean flag that indicates only local queries are being executed by this OpenSearch
      * Source.
-     * 
+     *
      * @return true indicates only local queries, false indicates enterprise query
      */
     public boolean getLocalQueryOnly() {
@@ -673,7 +704,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
     /**
      * Sets the boolean flag that tells the code to convert point-radius and polygon geometries to a
      * bounding box before sending them.
-     * 
+     *
      * @param shouldConvertToBBox
      */
     public void setShouldConvertToBBox(boolean shouldConvertToBBox) {
@@ -683,7 +714,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
     /**
      * Get the boolean flag that determines if point-radius and polygon geometries should be
      * converting to bounding boxes before sending.
-     * 
+     *
      * @return
      */
     public boolean getShouldConvertToBBox() {
@@ -713,7 +744,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
             if (restClient != null) {
                 Object binaryContent = null;
                 MimeType mimeType = null;
-                
+
                 WebClient webClient = openSearchConnection.getWebClientFromClient(restClient);
 
                 // If a bytesToSkip property is present add range header
@@ -735,7 +766,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
                     LOGGER.warn("Error while trying to retreiveResource from OpenSearch Source", e);
                     throw new ResourceNotFoundException(COULD_NOT_RETRIEVE_RESOURCE_MESSAGE);
                 }
-                
+
                 if (clientResponse == null) {
                     LOGGER.warn("Error while trying to retreiveResource from OpenSearch Source");
                     throw new ResourceNotFoundException(COULD_NOT_RETRIEVE_RESOURCE_MESSAGE);
@@ -774,11 +805,11 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
                         if ((rangeHeader != null) && (rangeHeader.equals(BYTES))) {
                             LOGGER.info("Adding {} to response properties with value = {}", BYTES_SKIPPED, true);
                             responseProperties.put(BYTES_SKIPPED, true);
-                        }                       
+                        }
                     }
 
                     LOGGER.exit(methodName);
-                    
+
                     //DDF-643
                     ResourceResponseImpl resourceResponse = new ResourceResponseImpl(new ResourceImpl(
                             (InputStream) binaryContent, mimeType, getId()
@@ -912,7 +943,7 @@ public final class OpenSearchSource implements FederatedSource, ConfiguredServic
     public void setPassword(String password) {
         this.password = password;
     }
-    
+
     /**
      * Sets the receive timeout for messages sent from this provider.
      *
