@@ -141,7 +141,7 @@ public class CachingFederationStrategy implements FederationStrategy, PostIngest
         this.preQuery = preQuery;
         this.postQuery = postQuery;
         this.maxStartIndex = DEFAULT_MAX_START_INDEX;
-        this.queryResultCachingEnabled = true;
+        this.queryResultCachingEnabled = false;
         this.cache = cache;
         // phase advancer blocks waiting for next phase advance, delay 1 second between advances
         scheduler.scheduleWithFixedDelay(new PhaseAdvancer(phaser), 1, 1, TimeUnit.SECONDS);

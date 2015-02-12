@@ -24,7 +24,7 @@
          name="Catalog Federation Strategy"
          id="ddf.catalog.federation.impl.CachingFederationStrategy">
         <AD name="Enable Caching of Query Results" id="queryResultCachingEnabled" required="true" type="Boolean"
-            default="true"
+            default="false"
             description="When enabled all unique query results are cached for faster retrieval for future queries with the same search criteria."/> 
         <AD name="Maximum start index" id="maxStartIndex" required="true" type="Integer"
             default="50000"
@@ -37,7 +37,7 @@
 
         <AD name="Expiration Interval" id="expirationIntervalInMinutes" required="true" type="Long"
             default="10080"
-            description="Solr Cache expiration interval in minutes."/>
+            description="Solr Cache expiration interval in minutes. Default of 7 days: 10080 minutes"/>
 
         <AD description="HTTP URL of Solr 4.x Server" name="Solr URL" id="url"
             required="true" type="String" default="https://localhost:8993/solr"/>
