@@ -168,10 +168,16 @@ public class CachingFederationStrategy implements FederationStrategy, PostIngest
     private QueryResponse queryCache(QueryRequest queryRequest) {
         final QueryResponseImpl queryResponse = new QueryResponseImpl(queryRequest);
         try {
-            SourceResponse result = cache.query(queryRequest);
-            queryResponse.setHits(result.getHits());
-            queryResponse.setProperties(result.getProperties());
-            queryResponse.addResults(result.getResults(), true);
+            if (queryResultCachingEnabled) {
+                SourceResponse result = cache.query(queryRequest);
+                queryResponse.setHits(result.getHits());
+                queryResponse.setProperties(result.getProperties());
+                queryResponse.addResults(result.getResults(), true);
+            }else{
+                SourceResponse result = cache.query(queryRequest);
+                queryResponse.setHits(0);
+                queryResponse.setProperties(result.getProperties());
+            }
         } catch (UnsupportedQueryException e) {
             queryResponse.getProcessingDetails().add(new ProcessingDetailsImpl("cache",
                     e));
@@ -333,9 +339,11 @@ public class CachingFederationStrategy implements FederationStrategy, PostIngest
             metacards.add(update.getNewMetacard());
         }
 
-        logger.debug("Updating metacard(s) in cache.");
-        cache.create(metacards);
-        logger.debug("Updating metacard(s) in cache complete.");
+        if (queryResultCachingEnabled) {
+            logger.debug("Updating metacard(s) in cache.");
+            cache.create(metacards);
+            logger.debug("Updating metacard(s) in cache complete.");
+        }
 
         return input;
     }
@@ -346,9 +354,11 @@ public class CachingFederationStrategy implements FederationStrategy, PostIngest
         logger.debug("Post ingest processing of DeleteResponse.");
 
         try {
-            logger.debug("Deleting metacard(s) in cache.");
-            cache.delete(input.getRequest());
-            logger.debug("Deletion of metacard(s) in cache complete.");
+            if (queryResultCachingEnabled) {
+                logger.debug("Deleting metacard(s) in cache.");
+                cache.delete(input.getRequest());
+                logger.debug("Deletion of metacard(s) in cache complete.");
+            }
         } catch(IngestException e) {
             throw new PluginExecutionException("Error processing DeleteResponse.", e);
         }
@@ -580,7 +590,7 @@ public class CachingFederationStrategy implements FederationStrategy, PostIngest
             }
             logger.debug("All sources finished returning results: {}", resultList.size());
 
-            if (INDEX_QUERY_MODE.equals(request.getPropertyValue(QUERY_MODE))) {
+            if (INDEX_QUERY_MODE.equals(request.getPropertyValue(QUERY_MODE)) && (queryResultCachingEnabled)) {
                 QueryResponse result = queryCache(request);
                 returnResults.setHits(totalHits);
                 returnResults.addResults(result.getResults(), true);
