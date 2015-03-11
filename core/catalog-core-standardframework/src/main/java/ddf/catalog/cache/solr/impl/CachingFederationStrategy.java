@@ -30,6 +30,7 @@ import ddf.catalog.operation.impl.ProcessingDetailsImpl;
 import ddf.catalog.operation.impl.QueryImpl;
 import ddf.catalog.operation.impl.QueryRequestImpl;
 import ddf.catalog.operation.impl.QueryResponseImpl;
+import ddf.catalog.operation.impl.DeleteRequestImpl;
 import ddf.catalog.plugin.PluginExecutionException;
 import ddf.catalog.plugin.PostFederatedQueryPlugin;
 import ddf.catalog.plugin.PostIngestPlugin;
@@ -168,16 +169,33 @@ public class CachingFederationStrategy implements FederationStrategy, PostIngest
     private QueryResponse queryCache(QueryRequest queryRequest) {
         final QueryResponseImpl queryResponse = new QueryResponseImpl(queryRequest);
         try {
-            if (queryResultCachingEnabled) {
-                SourceResponse result = cache.query(queryRequest);
-                queryResponse.setHits(result.getHits());
-                queryResponse.setProperties(result.getProperties());
-                queryResponse.addResults(result.getResults(), true);
-            }else{
-                SourceResponse result = cache.query(queryRequest);
-                queryResponse.setHits(0);
-                queryResponse.setProperties(result.getProperties());
+            SourceResponse response = cache.query(queryRequest);
+
+            if((!queryResultCachingEnabled)  && (response.getHits() != 0)){
+                // If caching disabled, and responses exist in cache - delete matching results
+                logger.debug("Deleting {} responses from cache", response.getHits());
+                List<Result> results = response.getResults();
+                List<String> ids = new ArrayList<String>();
+                for(Result result : results){
+                    ids.add(result.getMetacard().getId());
+                }
+
+                String[] idArray = new String[ids.size()];
+                ids.toArray(idArray);
+                DeleteRequestImpl dr = new DeleteRequestImpl(idArray);
+                try{
+                    cache.delete(dr); 
+                }catch(IngestException e){
+                    logger.warn("Unable to delete records some records from cache");
+                }
+                
+                // Re-query cache
+                response = cache.query(queryRequest);
             }
+            queryResponse.setHits(response.getHits());
+            queryResponse.setProperties(response.getProperties());
+            queryResponse.addResults(response.getResults(), true);
+            logger.debug("Sending {} responses for queryCache", response.getHits());
         } catch (UnsupportedQueryException e) {
             queryResponse.getProcessingDetails().add(new ProcessingDetailsImpl("cache",
                     e));
@@ -381,6 +399,7 @@ public class CachingFederationStrategy implements FederationStrategy, PostIngest
         public SourceResponse call() throws Exception {
             final SourceResponse sourceResponse = source.query(new QueryRequestImpl(request.getQuery(),
                     request.getProperties()));
+            logger.debug("Sending {} index results for Source Response", sourceResponse.getHits());
 
             if (queryResultCachingEnabled) {
                 if (INDEX_QUERY_MODE.equals(request.getPropertyValue(QUERY_MODE))) {
