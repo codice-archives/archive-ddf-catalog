@@ -61,7 +61,7 @@ Endpoints are meant to be the only client-accessible components in the Catalog.
 |                |cDEF               |                       |
 |                | Catalog Provider  |                       |
 |                \-------------------/                       |
-+------------------------------------------------------------
++------------------------------------------------------------+
 ....
 
 == Existing Endpoints
