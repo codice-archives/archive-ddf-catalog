@@ -165,7 +165,6 @@
                     <sourceDirectory>target/adoc</sourceDirectory>
                     <headerFooter>true</headerFooter>
                     <imagesDir>./images</imagesDir>
-                    <imagesOutDir>./images</imagesOutDir>
                     <outputDirectory>target/docs/html</outputDirectory>
                 </configuration>
             </plugin>
