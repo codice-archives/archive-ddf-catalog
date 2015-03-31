@@ -53,6 +53,10 @@ public class RemoveCommand extends CatalogCommands {
                     + "\tComplex:   search --cql \"title like 'some text' AND modified before 2012-09-01T12:30:00Z\"")
     String cqlFilter = null;
 
+    @Option(name = "--cacheonly", required = false, aliases = {}, multiValued = false, description =
+            "Specifies that this remove command will only affect the catalog cache")
+    boolean cacheOnly = false;
+
     @Override
     protected Object doExecute() throws Exception {
 

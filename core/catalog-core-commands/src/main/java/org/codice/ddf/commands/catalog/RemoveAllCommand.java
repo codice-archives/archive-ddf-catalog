@@ -75,6 +75,10 @@ public class RemoveAllCommand extends CatalogCommands {
     @Option(name = "-f", required = false, aliases = {"--force"}, multiValued = false, description = "Force the removal without a confirmation message.")
     boolean force = false;
 
+    @Option(name = "--cacheonly", required = false, aliases = {}, multiValued = false, description =
+            "Specifies that this remove command will only affect the catalog cache")
+    boolean cacheOnly = false;
+
     @Override
     protected Object doExecute() throws Exception {
 
