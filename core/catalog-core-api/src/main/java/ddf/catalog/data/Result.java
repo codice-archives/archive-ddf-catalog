@@ -15,6 +15,7 @@
 package ddf.catalog.data;
 
 import ddf.catalog.operation.Query;
+import java.util.Date;
 
 /**
  * The Result is used to supplement {@link Metacard} fields when a {@link Metacard} is returned from
@@ -62,5 +63,13 @@ public interface Result {
      *         by distance.
      */
     public Double getDistanceInMeters();
+
+    /**
+     * Gets the date the record was cached.
+     * 
+     * @return date record was cached, null if {@code Result} was not cached
+     *         by distance.
+     */
+    public Date getCachedDate();
 
 }

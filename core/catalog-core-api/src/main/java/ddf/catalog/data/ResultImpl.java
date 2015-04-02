@@ -15,6 +15,9 @@
 package ddf.catalog.data;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
 
 /**
  * Default implementation of the {@link Result} interface, which is a
@@ -32,6 +35,8 @@ public class ResultImpl implements Result {
     private Double distance;
 
     private Double relevance;
+
+    private Date cachedDate;
 
     /**
      * Default constructor
@@ -111,6 +116,32 @@ public class ResultImpl implements Result {
      */
     public void setMetacard(Metacard metacard) {
         this.metacard = metacard;
+    }
+
+    @Override
+    public Date getCachedDate() {
+        return cachedDate;
+    }
+
+    /**
+     * Sets the cached {@link Date}.
+     * 
+     * @param date
+     *            the {@link Date}
+     */
+    public void setCachedDate(Date date) {
+        this.cachedDate = date;
+    }
+
+    /**
+     * Sets the cached {@link Date} from a string.
+     * 
+     * @param date
+     *            the {@link Date}
+     */
+    public void setCachedDateString(String date) throws java.text.ParseException {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+        this.cachedDate = dateFormatter.parse(date);
     }
 
 }
