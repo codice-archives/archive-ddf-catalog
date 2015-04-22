@@ -26,6 +26,7 @@ import org.slf4j.ext.XLogger;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -321,6 +322,11 @@ public class QueryResponseImpl extends ResponseImpl<QueryRequest> implements Que
 
         @Override
         public Metacard getMetacard() {
+            return null;
+        }
+
+        @Override
+        public Date getCachedDate() {
             return null;
         }
 

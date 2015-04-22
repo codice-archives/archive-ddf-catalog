@@ -27,6 +27,7 @@ import ddf.catalog.operation.QueryRequest;
 import ddf.catalog.operation.SourceResponse;
 import ddf.catalog.operation.impl.QueryResponseImpl;
 import ddf.catalog.operation.impl.SourceResponseImpl;
+import ddf.catalog.source.solr.SchemaFields;
 import ddf.catalog.source.UnsupportedQueryException;
 import ddf.measure.Distance;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -48,6 +49,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 public class SolrMetacardClient {
@@ -57,6 +59,8 @@ public class SolrMetacardClient {
     protected static final String RELEVANCE_SORT_FIELD = "score";
 
     private static final String QUOTE = "\"";
+
+    private static final String CACHED_DATE = "cached" + SchemaFields.DATE_SUFFIX;
 
     private final SolrServer server;
 
@@ -200,6 +204,9 @@ public class SolrMetacardClient {
     private ResultImpl createResult(SolrDocument doc, String sortProperty)
             throws MetacardCreationException {
         ResultImpl result = new ResultImpl(createMetacard(doc));
+
+        // Set the date the record was cached
+        result.setCachedDate((Date)doc.getFieldValue(CACHED_DATE));
 
         if (doc.get(RELEVANCE_SORT_FIELD) != null) {
             if (Result.RELEVANCE.equals(sortProperty)) {
