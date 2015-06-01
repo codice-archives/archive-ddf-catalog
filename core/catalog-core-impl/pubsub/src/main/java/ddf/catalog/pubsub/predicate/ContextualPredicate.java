@@ -1,15 +1,16 @@
 /**
  * Copyright (c) Codice Foundation
- * <p/>
+ *
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- * <p/>
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
+ *
  **/
 
 package ddf.catalog.pubsub.predicate;
@@ -69,10 +70,7 @@ public class ContextualPredicate implements Predicate {
      * @return a search phrase aligned to Lucene syntax
      */
     public static String normalizePhrase(String inputPhrase, boolean isFuzzy) {
-        String phrase = inputPhrase.trim();
-        String parts[] = phrase.split("\"");
-        LOGGER.debug("phrase = [{}]    parts.length = {}", phrase, parts.length);
-
+        String phrase = "";
         if (inputPhrase != null && !inputPhrase.equals("")) {
             phrase = escapeSpecialCharacters(inputPhrase.trim());
             String parts[] = phrase.split("\"");
@@ -99,13 +97,14 @@ public class ContextualPredicate implements Predicate {
                     }
                 }
 
-                phrase = "";
+                StringBuilder phraseBuilder = new StringBuilder("");
                 for (int i = 0; i < parts.length; i++) {
                     phraseBuilder.append(parts[i]);
                     if (i < (parts.length - 1)) {
                         phraseBuilder.append("\"");
                     }
                 }
+                phrase = phraseBuilder.toString();
             } else {
                 LOGGER.debug("parts.length <= 1:  phrase = {}", phrase);
                 phrase = normalizeBooleanOperators(phrase);

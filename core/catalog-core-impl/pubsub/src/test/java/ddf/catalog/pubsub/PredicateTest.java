@@ -1,15 +1,16 @@
 /**
  * Copyright (c) Codice Foundation
- * <p/>
+ *
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- * <p/>
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
+ *
  **/
 
 package ddf.catalog.pubsub;
@@ -116,7 +117,7 @@ public class PredicateTest {
         metacard.setMetadata(TestDataLibrary.getCatAndDogEntry());
 
         ContentTypePredicate ctp = new ContentTypePredicate("type1", "version1");
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_CONTENT_TYPE_KEY, "type1,version1");
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
 
@@ -200,7 +201,7 @@ public class PredicateTest {
         logger.debug("***************  START: " + methodName + "  *****************");
 
         ContentTypePredicate ctp = new ContentTypePredicate("type1", "version1");
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_CONTENT_TYPE_KEY, "type1,version1");
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
         // No Contextual map added to properties containing indexed metadata
@@ -220,7 +221,7 @@ public class PredicateTest {
         metacard.setMetadata(TestDataLibrary.getCatAndDogEntry());
 
         ContentTypePredicate ctp = new ContentTypePredicate("type1", "version1");
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_CONTENT_TYPE_KEY, "type1,version1");
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, null);
         Map<String, Object> contextualMap = constructContextualMap(metacard);
@@ -243,7 +244,7 @@ public class PredicateTest {
         String type = "type_1";
         String version = "v1";
 
-        List<MockTypeVersionsExtension> extensions = new ArrayList<>();
+        List<MockTypeVersionsExtension> extensions = new ArrayList<MockTypeVersionsExtension>();
         MockTypeVersionsExtension ext1 = new MockTypeVersionsExtension();
         List<String> ext1Versions = ext1.getVersions();
         ext1Versions.add(version);
@@ -256,7 +257,7 @@ public class PredicateTest {
         SubscriptionFilterVisitor visitor = new SubscriptionFilterVisitor();
         Predicate pred = (Predicate) query.getFilter().accept(visitor, null);
 
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_CONTENT_TYPE_KEY, type + "," + version);
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
 
@@ -295,7 +296,7 @@ public class PredicateTest {
 
     private Map<String, Object> constructContextualMap(MetacardImpl metacard) throws IOException {
         Directory index = ContextualEvaluator.buildIndex(metacard.getMetadata());
-        Map<String, Object> contextualMap = new HashMap<>();
+        Map<String, Object> contextualMap = new HashMap<String, Object>();
         contextualMap.put("DEFAULT_INDEX", index);
         contextualMap.put("METADATA", metacard.getMetadata());
         return contextualMap;
@@ -310,7 +311,7 @@ public class PredicateTest {
         metacard.setMetadata(TestDataLibrary.getCatAndDogEntry());
 
         String type1 = "type_1";
-        List<MockTypeVersionsExtension> extensions = new ArrayList<>();
+        List<MockTypeVersionsExtension> extensions = new ArrayList<MockTypeVersionsExtension>();
         MockTypeVersionsExtension ext1 = new MockTypeVersionsExtension();
         ext1.setExtensionTypeName(type1);
         extensions.add(ext1);
@@ -323,7 +324,7 @@ public class PredicateTest {
         assertEquals(type1, pred.getType());
         assertNull(pred.getVersion());
 
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
 
         Map<String, Object> contextualMap = constructContextualMap(metacard);
@@ -397,7 +398,7 @@ public class PredicateTest {
         Predicate pred = (Predicate) query.getFilter().accept(visitor, null);
         logger.debug("Resulting Predicate: " + pred);
 
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
 
         Map<String, Object> contextualMap = constructContextualMap(metacard);
@@ -472,7 +473,7 @@ public class PredicateTest {
         MetacardImpl metacard = new MetacardImpl();
         metacard.setMetadata(TestDataLibrary.getCatAndDogEntry());
 
-        List<MockTypeVersionsExtension> extensions = new ArrayList<>();
+        List<MockTypeVersionsExtension> extensions = new ArrayList<MockTypeVersionsExtension>();
         MockTypeVersionsExtension ext1 = new MockTypeVersionsExtension();
         List<String> ext1Versions = ext1.getVersions();
         ext1Versions.add(version1);
@@ -503,7 +504,7 @@ public class PredicateTest {
         Predicate pred = (Predicate) query.getFilter().accept(visitor, null);
         logger.debug("Resulting Predicate: " + pred);
 
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
 
         Map<String, Object> contextualMap = constructContextualMap(metacard);
@@ -595,7 +596,7 @@ public class PredicateTest {
         Date effectiveDate = cal.toGregorianCalendar().getTime();
         metacard.setEffectiveDate(effectiveDate);
 
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
 
         Map<String, Object> contextualMap = constructContextualMap(metacard);
@@ -658,7 +659,7 @@ public class PredicateTest {
         Date effectiveDate = cal.toGregorianCalendar().getTime();
         metacard.setEffectiveDate(effectiveDate);
 
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
         // no contextual map containing indexed contextual data
 
@@ -704,7 +705,7 @@ public class PredicateTest {
         Date effectiveDate = cal.toGregorianCalendar().getTime();
         metacard.setEffectiveDate(effectiveDate);
 
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, null);
         Map<String, Object> contextualMap = constructContextualMap(metacard);
         properties.put(PubSubConstants.HEADER_CONTEXTUAL_KEY, contextualMap);
@@ -760,7 +761,7 @@ public class PredicateTest {
         String version1 = "version1";
         String type1 = "type1";
 
-        List<MockTypeVersionsExtension> extensions = new ArrayList<>();
+        List<MockTypeVersionsExtension> extensions = new ArrayList<MockTypeVersionsExtension>();
         MockTypeVersionsExtension ext1 = new MockTypeVersionsExtension();
         List<String> ext1Versions = ext1.getVersions();
         ext1Versions.add(version1);
@@ -791,7 +792,7 @@ public class PredicateTest {
         Date effectiveDate = cal.toGregorianCalendar().getTime();
         metacard.setEffectiveDate(effectiveDate);
 
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
 
         Map<String, Object> contextualMap = constructContextualMap(metacard);
@@ -972,7 +973,7 @@ public class PredicateTest {
         Date modifiedDate = cal.toGregorianCalendar().getTime();
         metacard.setModifiedDate(modifiedDate);
 
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_ID_KEY, metacard.getId());
         properties.put(PubSubConstants.HEADER_ENTRY_KEY, metacard);
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
@@ -1066,7 +1067,7 @@ public class PredicateTest {
         MetacardImpl metacard = new MetacardImpl();
         metacard.setId("ABC123");
         metacard.setMetadata(TestDataLibrary.getCatAndDogEntry());
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_ID_KEY, metacard.getId());
         properties.put(PubSubConstants.HEADER_ENTRY_KEY, metacard);
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
@@ -1237,7 +1238,7 @@ public class PredicateTest {
         MetacardImpl metacard = new MetacardImpl();
         metacard.setId("ABC123");
         metacard.setMetadata(TestDataLibrary.getCatAndDogEntry());
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_ID_KEY, metacard.getId());
         properties.put(PubSubConstants.HEADER_ENTRY_KEY, metacard);
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
@@ -1316,7 +1317,7 @@ public class PredicateTest {
         MetacardImpl metacard = new MetacardImpl();
         metacard.setLocation("POINT (41 34)");
 
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_CONTENT_TYPE_KEY, "type1,version1");
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
         properties.put(PubSubConstants.HEADER_ENTRY_KEY, metacard);
@@ -1342,7 +1343,7 @@ public class PredicateTest {
         metacard.setLocation("POINT (41 34)");
         metacard.setMetadata(TestDataLibrary.getCatAndDogEntry());
 
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_CONTENT_TYPE_KEY, "type1,version1");
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, null);
         properties.put(PubSubConstants.HEADER_ENTRY_KEY, metacard);
@@ -1627,7 +1628,7 @@ public class PredicateTest {
      *                      each type/version is comma-delimited
      */
     private List<MockTypeVersionsExtension> createContentTypeVersionList(String typesVersions) {
-        List<MockTypeVersionsExtension> extensions = new ArrayList<>();
+        List<MockTypeVersionsExtension> extensions = new ArrayList<MockTypeVersionsExtension>();
 
         logger.debug("typesVersions = " + typesVersions);
         String[] typeVersionPairs = typesVersions.split("\\|");
@@ -1685,7 +1686,7 @@ public class PredicateTest {
         MetacardImpl metacard = new MetacardImpl();
         metacard.setId("ABC123");
         metacard.setMetadata(metadata);
-        HashMap<String, Object> properties = new HashMap<>();
+        HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put(PubSubConstants.HEADER_ID_KEY, metacard.getId());
         properties.put(PubSubConstants.HEADER_ENTRY_KEY, metacard);
         properties.put(PubSubConstants.HEADER_OPERATION_KEY, PubSubConstants.CREATE);
