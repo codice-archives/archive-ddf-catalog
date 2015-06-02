@@ -1191,7 +1191,7 @@ public class PredicateTest {
                 String metadata = String
                         .format(METADATA_FORMAT, StringEscapeUtils.escapeXml(phrase));
                 Event testEvent = getEvent(metadata);
-                assertThat(phrase + " not matched", predicate.matches(testEvent),
+                assertThat(phrase + " matched", predicate.matches(testEvent),
                         is(equalTo(false)));
             }
         }
@@ -1216,7 +1216,7 @@ public class PredicateTest {
                 String metadata = String
                         .format(METADATA_FORMAT, StringEscapeUtils.escapeXml(phrase));
                 Event testEvent = getEvent(metadata);
-                assertThat(phrase + " not matched", predicate.matches(testEvent),
+                assertThat(phrase + " matched", predicate.matches(testEvent),
                         is(equalTo(false)));
             }
         }
