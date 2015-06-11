@@ -1,17 +1,16 @@
 /**
  * Copyright (c) Codice Foundation
- * 
+ * <p/>
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- * 
+ * <p/>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
- * 
- **/
+ */
 package org.codice.ddf.commands.cache;
 
 import java.io.IOException;
@@ -40,7 +39,7 @@ import ddf.catalog.operation.impl.QueryRequestImpl;
 import ddf.catalog.source.UnsupportedQueryException;
 
 /**
- * 
+ *
  * Command to remove all or subset of records in the Metacard Cache.
  */
 
@@ -49,7 +48,8 @@ public class RemoveAllCommand extends CacheCommands {
 
     static final String WARNING_MESSAGE = "WARNING: This will remove all records from the cache.  Do you want to proceed? (yes/no): ";
 
-    @Option(name = "-f", required = false, aliases = {"--force"}, multiValued = false, description = "Force the removal without a confirmation message.")
+    @Option(name = "-f", required = false, aliases = {
+            "--force"}, multiValued = false, description = "Force the removal without a confirmation message.")
     boolean force = false;
 
     @Override
@@ -111,15 +111,13 @@ public class RemoveAllCommand extends CacheCommands {
         SourceResponse response = null;
 
         response = getCacheProxy().query(new QueryRequestImpl(query, properties));
-
-        while (response.getResults().size() > 0) {
+        if (response.getResults().size() > 0) {
             for (Result result : response.getResults()) {
                 if (result != null && result.getMetacard() != null) {
                     ids.add(result.getMetacard().getId());
                 }
             }
         }
-
         return ids;
 
     }
