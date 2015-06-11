@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
-import ddf.catalog.cache.solr.SolrCacheMBean;
 import ddf.catalog.data.Metacard;
 import ddf.catalog.data.MetacardCreationException;
 import ddf.catalog.data.impl.MetacardImpl;
@@ -112,7 +111,7 @@ public class SolrCache implements SolrCacheMBean {
         configureCacheExpirationScheduler();
 
         try {
-            objectName = new ObjectName(SolrCache.class.getName() + ":service=cache-manager");
+            objectName = new ObjectName(SolrCacheMBean.OBJECTNAME);
         } catch (MalformedObjectNameException e) {
             LOGGER.info("Could not create object name", e);
         }
@@ -180,16 +179,6 @@ public class SolrCache implements SolrCacheMBean {
 
     public void setExpirationAgeInMinutes(long expirationAgeInMinutes) {
         this.expirationAgeInMinutes = expirationAgeInMinutes;
-    }
-
-    @Override
-    public SourceResponse queryCache(QueryRequest request) throws UnsupportedQueryException {
-        return query(request);
-    }
-
-    @Override
-    public void deleteFromCache(DeleteRequest request) {
-        delete(request);
     }
 
     private void configureCacheExpirationScheduler() {
