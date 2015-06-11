@@ -71,7 +71,7 @@ public class ContextualPredicate implements Predicate {
     public static String normalizePhrase(String inputPhrase, boolean isFuzzy) {
         String phrase = "";
         if (inputPhrase != null && !inputPhrase.equals("")) {
-            phrase = escapeSpecialCharacters(inputPhrase.trim());
+            phrase = inputPhrase.trim();
             String parts[] = phrase.split("\"");
             LOGGER.debug("phrase = [{}]    parts.length = {}", phrase, parts.length);
             // if multiple parts found, then exact (quoted) phrases are present
@@ -83,6 +83,7 @@ public class ContextualPredicate implements Predicate {
                     if (i % 2 == 0) {
                         if (!parts[i].isEmpty()) {
                             parts[i] = normalizeBooleanOperators(parts[i]);
+                            parts[i] = escapeSpecialCharacters(parts[i]);
 
                             if (isFuzzy && !isBooleanOperator(parts[i])) {
                                 parts[i] = parts[i] + "~";
@@ -93,6 +94,8 @@ public class ContextualPredicate implements Predicate {
                         } else {
                             LOGGER.debug("part[{}] was empty", i);
                         }
+                    } else {
+                        parts[i] = escapeSpecialCharacters(parts[i]);
                     }
                 }
 
@@ -107,6 +110,7 @@ public class ContextualPredicate implements Predicate {
             } else {
                 LOGGER.debug("parts.length <= 1:  phrase = {}", phrase);
                 phrase = normalizeBooleanOperators(phrase);
+                phrase = escapeSpecialCharacters(phrase);
                 if (isFuzzy) {
                     String[] words = phrase.trim().split("[ ]+");
                     for (int i = 0; i < words.length; i++) {
@@ -142,16 +146,31 @@ public class ContextualPredicate implements Predicate {
 
     private static String escapeSpecialCharacters(String phrase) {
         StringBuilder sb = new StringBuilder();
-        char[] chars = phrase.toCharArray();
+        char[] chars = phrase.trim().toCharArray();
         for (int i = 0; i < chars.length; i++) {
-            char aChar = chars[i];
+            char currentChar = chars[i];
             // * is escaped by the subscription when not a wildcard
             // if the character has already been manually escaped, don't double escape
-            if (aChar != '*' && ContextualTokenizer.SPECIAL_CHARACTERS_SET.contains(aChar) && (
-                    i == 0 || !Character.toString(chars[i - 1]).equals("\\"))) {
-                sb.append("\\");
+            char nullChar = '\0';
+            char nextChar = nullChar;
+            if (i + 1 < chars.length) {
+                nextChar = chars[i + 1];
             }
-            sb.append(aChar);
+            if (currentChar == '\\' && nextChar != nullChar
+                    && ContextualTokenizer.SPECIAL_CHARACTERS_SET.contains(nextChar)) {
+                // these two tokens constitute an escaped character,
+                // so consume them together
+                i = i + 1;
+                sb.append(currentChar);
+                sb.append(nextChar);
+            } else if (currentChar != '*' && ContextualTokenizer.SPECIAL_CHARACTERS_SET
+                    .contains(currentChar)) {
+                // handle unescaped special characters
+                sb.append("\\");
+                sb.append(currentChar);
+            } else {
+                sb.append(currentChar);
+            }
         }
         phrase = sb.toString();
         return phrase;
@@ -168,8 +187,8 @@ public class ContextualPredicate implements Predicate {
         phrase = phrase.replace(" not ", " NOT ");
         phrase = phrase.replace(" or ", " OR ");
         phrase = phrase.replace(" and ", " AND ");
-        phrase = phrase.replace("&", "AND");
-        phrase = phrase.replace("|", "OR");
+        phrase = phrase.replace(" & ", "AND");
+        phrase = phrase.replace(" | ", "OR");
 
         return phrase;
     }
