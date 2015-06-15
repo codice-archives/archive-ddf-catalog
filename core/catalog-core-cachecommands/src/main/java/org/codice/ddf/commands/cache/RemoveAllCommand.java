@@ -15,28 +15,9 @@ package org.codice.ddf.commands.cache;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.management.InstanceNotFoundException;
-import javax.management.MalformedObjectNameException;
 
 import org.apache.felix.gogo.commands.Command;
 import org.apache.felix.gogo.commands.Option;
-import org.opengis.filter.Filter;
-
-import ddf.catalog.data.Metacard;
-import ddf.catalog.data.Result;
-import ddf.catalog.filter.FilterBuilder;
-import ddf.catalog.operation.DeleteRequest;
-import ddf.catalog.operation.SourceResponse;
-import ddf.catalog.operation.impl.DeleteRequestImpl;
-import ddf.catalog.operation.impl.QueryImpl;
-import ddf.catalog.operation.impl.QueryRequestImpl;
-import ddf.catalog.source.UnsupportedQueryException;
 
 /**
  *
@@ -48,19 +29,24 @@ public class RemoveAllCommand extends CacheCommands {
 
     static final String WARNING_MESSAGE = "WARNING: This will remove all records from the cache.  Do you want to proceed? (yes/no): ";
 
-    @Option(name = "-f", required = false, aliases = {
-            "--force"}, multiValued = false, description = "Force the removal without a confirmation message.")
+    @Option(name = "-f", required = false, aliases = {"--force"}, multiValued = false, description = "Force the removal without a confirmation message.")
     boolean force = false;
 
     @Override
     protected Object doExecute() throws Exception {
 
-        List<String> ids = getCachedMetacardIds();
+        if (isAccidentalRemoval(console)) {
+            return null;
+        }
 
-        DeleteRequest deleteRequest = new DeleteRequestImpl(ids.toArray(new String[ids.size()]));
+        long start = System.currentTimeMillis();
 
-        getCacheProxy().delete(deleteRequest);
+        getCacheProxy().removeAll();
 
+        long end = System.currentTimeMillis();
+
+        console.println();
+        console.printf("Cache cleared in %3.3f seconds%n", (end - start) / MILLISECONDS_PER_SECOND);
         return null;
 
     }
@@ -92,34 +78,4 @@ public class RemoveAllCommand extends CacheCommands {
 
         return false;
     }
-
-    private List<String> getCachedMetacardIds()
-            throws MalformedObjectNameException, UnsupportedQueryException, IOException,
-            InstanceNotFoundException {
-        List<String> ids = new ArrayList<>();
-        FilterBuilder filterBuilder = getFilterBuilder();
-
-        Filter filter = filterBuilder.attribute(Metacard.ID).is().like().text(WILDCARD);
-
-        QueryImpl query = new QueryImpl(filter);
-
-        query.setRequestsTotalResultsCount(true);
-
-        Map<String, Serializable> properties = new HashMap<>();
-        properties.put("mode", "native");
-
-        SourceResponse response = null;
-
-        response = getCacheProxy().query(new QueryRequestImpl(query, properties));
-        if (response.getResults().size() > 0) {
-            for (Result result : response.getResults()) {
-                if (result != null && result.getMetacard() != null) {
-                    ids.add(result.getMetacard().getId());
-                }
-            }
-        }
-        return ids;
-
-    }
-
 }

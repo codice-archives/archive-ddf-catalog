@@ -17,6 +17,7 @@ package ddf.catalog.cache.solr.impl;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -279,6 +281,22 @@ public class SolrCache implements SolrCacheMBean {
         server.shutdown();
     }
 
+    @Override
+    public void removeAll() throws IOException, SolrServerException {
+        client.deleteByQuery("*:*");
+    }
+
+    @Override
+    public void removeById(String[] ids) throws IOException, SolrServerException {
+        List<String> idList = Arrays.asList(ids);
+        client.deleteByIds(METACARD_ID_NAME, idList, false);
+    }
+
+    @Override
+    public List<Metacard> query(String query) throws UnsupportedQueryException {
+        return client.query(query);
+    }
+
     private class ExpirationRunner implements Runnable {
 
         @Override
@@ -309,6 +327,10 @@ public class SolrCache implements SolrCacheMBean {
             metacard.setId(getMetacardId(doc));
 
             return metacard;
+        }
+
+        public UpdateResponse delete(String query) throws IOException, SolrServerException {
+            return server.deleteByQuery(query);
         }
 
         @Override
@@ -352,4 +374,5 @@ public class SolrCache implements SolrCacheMBean {
             return solrInputDocument;
         }
     }
+
 }

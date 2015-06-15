@@ -14,16 +14,19 @@
  **/
 package ddf.catalog.cache.solr.impl;
 
-import ddf.catalog.operation.DeleteRequest;
-import ddf.catalog.operation.QueryRequest;
-import ddf.catalog.operation.SourceResponse;
+import java.util.List;
+
+import ddf.catalog.data.Metacard;
 import ddf.catalog.source.UnsupportedQueryException;
 
 public interface SolrCacheMBean {
 
     public static final String OBJECTNAME = "ddf.catalog.cache.solr.impl.SolrCache:service=cache-manager";
 
-    SourceResponse query(QueryRequest request) throws UnsupportedQueryException;
+    void removeAll() throws Exception;
 
-    void delete(DeleteRequest request);
+    void removeById(String[] ids) throws Exception;
+
+    List<Metacard> query(String query) throws UnsupportedQueryException;
+
 }

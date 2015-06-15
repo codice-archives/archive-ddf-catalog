@@ -14,47 +14,77 @@
 package org.codice.ddf.commands.cache;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 
 import javax.management.InstanceNotFoundException;
-import javax.management.JMX;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
 
 import org.apache.karaf.shell.console.OsgiCommandSupport;
+import org.fusesource.jansi.Ansi;
+import org.fusesource.jansi.Ansi.Color;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import ddf.catalog.cache.solr.impl.SolrCacheMBean;
-import ddf.catalog.filter.FilterBuilder;
 
 public class CacheCommands extends OsgiCommandSupport {
 
+    public static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormat
+            .forPattern("yyyy-MM-dd'T'HH:mm:ssZZ");
+
     protected static final String NAMESPACE = "cache";
 
-    protected static final String WILDCARD = "*";
+    protected PrintStream console = System.out;
+
+    protected static final double MILLISECONDS_PER_SECOND = 1000.0;
+
+    private static final Color ERROR_COLOR = Ansi.Color.RED;
+
+    private static final Color SUCCESS_COLOR = Ansi.Color.GREEN;
+
+    private static final Color HEADER_COLOR = Ansi.Color.CYAN;
 
     @Override
     protected Object doExecute() throws Exception {
         return null;
     }
 
-    protected SolrCacheMBean getCacheProxy()
-            throws IOException, MalformedObjectNameException, InstanceNotFoundException {
+    protected SolrCacheMBean getCacheProxy() throws IOException, MalformedObjectNameException,
+        InstanceNotFoundException {
 
         ObjectName solrCacheObjectName = new ObjectName(SolrCacheMBean.OBJECTNAME);
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
 
-        return MBeanServerInvocationHandler
-                .newProxyInstance(mBeanServer, solrCacheObjectName, SolrCacheMBean.class, false);
+        return MBeanServerInvocationHandler.newProxyInstance(mBeanServer, solrCacheObjectName,
+                SolrCacheMBean.class, false);
 
     }
 
-    protected FilterBuilder getFilterBuilder() {
-        return getService(FilterBuilder.class);
+    protected void printColor(Color color, String message) {
+        String colorString;
+        if (color == null || color.equals(Ansi.Color.DEFAULT)) {
+            colorString = Ansi.ansi().reset().toString();
+        } else {
+            colorString = Ansi.ansi().fg(color).toString();
+        }
+        console.print(colorString);
+        console.print(message);
+        console.println(Ansi.ansi().reset().toString());
     }
 
+    protected void printSuccessMessage(String message) {
+        printColor(SUCCESS_COLOR, message);
+    }
+
+    protected void printErrorMessage(String message) {
+        printColor(ERROR_COLOR, message);
+    }
+
+    protected void printHeaderMessage(String message) {
+        printColor(HEADER_COLOR, message);
+    }
 }
