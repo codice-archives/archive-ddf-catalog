@@ -26,8 +26,5 @@
 		<command name="cache/search">
 			<action class="org.codice.ddf.commands.cache.SearchCommand" />
 		</command>
-		
 	</command-bundle>
-
-
 </blueprint>

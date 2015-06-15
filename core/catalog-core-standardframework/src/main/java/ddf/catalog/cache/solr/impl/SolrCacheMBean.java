@@ -28,5 +28,4 @@ public interface SolrCacheMBean {
     void removeById(String[] ids) throws Exception;
 
     List<Metacard> query(String query) throws UnsupportedQueryException;
-
 }

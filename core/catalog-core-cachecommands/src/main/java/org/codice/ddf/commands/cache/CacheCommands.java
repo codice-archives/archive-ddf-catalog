@@ -87,4 +87,5 @@ public class CacheCommands extends OsgiCommandSupport {
     protected void printHeaderMessage(String message) {
         printColor(HEADER_COLOR, message);
     }
+
 }

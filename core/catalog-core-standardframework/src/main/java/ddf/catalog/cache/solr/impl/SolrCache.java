@@ -374,5 +374,4 @@ public class SolrCache implements SolrCacheMBean {
             return solrInputDocument;
         }
     }
-
 }
