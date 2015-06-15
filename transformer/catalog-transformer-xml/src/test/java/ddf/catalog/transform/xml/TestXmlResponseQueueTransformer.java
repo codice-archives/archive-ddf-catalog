@@ -1,16 +1,15 @@
 /**
  * Copyright (c) Codice Foundation
- * 
+ * <p/>
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- * 
+ * <p/>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
- * 
  **/
 package ddf.catalog.transform.xml;
 
@@ -22,6 +21,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static junit.framework.Assert.assertEquals;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 
 import org.custommonkey.xmlunit.NamespaceContext;
 import org.custommonkey.xmlunit.SimpleNamespaceContext;
@@ -63,7 +64,6 @@ import ddf.catalog.transformer.xml.XmlResponseQueueTransformer;
 
 /**
  * Tests the {@link XmlResponseQueueTransformer} transformations
- * 
  */
 public class TestXmlResponseQueueTransformer {
 
@@ -85,15 +85,18 @@ public class TestXmlResponseQueueTransformer {
 
     private static final String DEFAULT_BASE64 = "AAAB";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestXmlResponseQueueTransformer.class);
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(TestXmlResponseQueueTransformer.class);
 
     private static final String DEFAULT_SOURCE_ID = "mySourceId";
+
+    private static final ForkJoinPool fjp = new ForkJoinPool();
 
     @BeforeClass
     public static void setupTestClass() {
 
         // makes xpaths easier to write when prefixes are declared beforehand.
-        HashMap map = new HashMap();
+        HashMap<String, String> map = new HashMap<>();
         map.put("gml", "http://www.opengis.net/gml");
         map.put("mc", "urn:catalog:metacard");
 
@@ -103,14 +106,15 @@ public class TestXmlResponseQueueTransformer {
 
     /**
      * Should throw exception when given {@code null} input
-     * 
+     *
      * @throws CatalogTransformerException
      */
     @Test(expected = CatalogTransformerException.class)
     public void testNullSourceResponse() throws CatalogTransformerException {
 
         // given
-        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer();
+        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer(fjp);
+        transformer.setThreshold(2);
 
         // when
         BinaryContent binaryContent = transformer.transform(null, null);
@@ -122,18 +126,19 @@ public class TestXmlResponseQueueTransformer {
 
     /**
      * No {@link MetacardType} name should use the default name.
-     * 
+     *
      * @throws CatalogTransformerException
      * @throws IOException
      * @throws SAXException
      * @throws XpathException
      */
     @Test
-    public void testMetacardTypeName_Null() throws CatalogTransformerException, IOException,
-        XpathException, SAXException {
+    public void testMetacardTypeName_Null()
+            throws CatalogTransformerException, IOException, XpathException, SAXException {
 
         // given
-        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer();
+        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer(fjp);
+        transformer.setThreshold(2);
 
         SourceResponse response = givenMetacardTypeName(null);
 
@@ -155,18 +160,19 @@ public class TestXmlResponseQueueTransformer {
 
     /**
      * No {@link MetacardType} name should use the default name.
-     * 
+     *
      * @throws CatalogTransformerException
      * @throws IOException
      * @throws SAXException
      * @throws XpathException
      */
     @Test
-    public void testMetacardTypeName_Empty() throws CatalogTransformerException, IOException,
-        XpathException, SAXException {
+    public void testMetacardTypeName_Empty()
+            throws CatalogTransformerException, IOException, XpathException, SAXException {
 
         // given
-        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer();
+        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer(fjp);
+        transformer.setThreshold(2);
 
         SourceResponse response = givenMetacardTypeName("");
 
@@ -187,11 +193,12 @@ public class TestXmlResponseQueueTransformer {
     }
 
     @Test
-    public void testNoIdNoSourceId() throws CatalogTransformerException, IOException,
-        XpathException, SAXException {
+    public void testNoIdNoSourceId()
+            throws CatalogTransformerException, IOException, XpathException, SAXException {
 
         // given
-        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer();
+        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer(fjp);
+        transformer.setThreshold(2);
 
         SourceResponse response = givenSourceResponse(null, null);
 
@@ -215,11 +222,12 @@ public class TestXmlResponseQueueTransformer {
     }
 
     @Test
-    public void testNoId() throws CatalogTransformerException, IOException, XpathException,
-        SAXException {
+    public void testNoId()
+            throws CatalogTransformerException, IOException, XpathException, SAXException {
 
         // given
-        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer();
+        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer(fjp);
+        transformer.setThreshold(2);
 
         SourceResponse response = givenSourceResponse(DEFAULT_SOURCE_ID, null);
 
@@ -243,11 +251,12 @@ public class TestXmlResponseQueueTransformer {
     }
 
     @Test
-    public void testStub() throws CatalogTransformerException, IOException, XpathException,
-        SAXException {
+    public void testStub()
+            throws CatalogTransformerException, IOException, XpathException, SAXException {
 
         // given
-        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer();
+        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer(fjp);
+        transformer.setThreshold(2);
 
         SourceResponse response = givenSourceResponse(DEFAULT_SOURCE_ID, DEFAULT_ID);
 
@@ -271,14 +280,14 @@ public class TestXmlResponseQueueTransformer {
     }
 
     @Test
-    public void testMultiple() throws CatalogTransformerException, IOException, XpathException,
-        SAXException {
-
+    public void testMultiple()
+            throws CatalogTransformerException, IOException, XpathException, SAXException {
         // given
-        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer();
+        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer(fjp);
+        transformer.setThreshold(2);
 
         SourceResponse response = givenSourceResponse(new MetacardStub("source1", "id1"),
-                new MetacardStub("source2", "id2"));
+                new MetacardStub("source2", "id2"), new MetacardStub("source3", "id3"));
 
         // when
         BinaryContent binaryContent = transformer.transform(response, null);
@@ -300,8 +309,39 @@ public class TestXmlResponseQueueTransformer {
 
         assertXpathEvaluatesTo("id2", "/mc:metacards/mc:metacard[2]/@gml:id", output);
 
+        assertXpathEvaluatesTo("source3", "/mc:metacards/mc:metacard[3]/mc:source", output);
+
+        assertXpathEvaluatesTo("id3", "/mc:metacards/mc:metacard[3]/@gml:id", output);
+
+        assertXpathEvaluatesTo("3", "count(/mc:metacards/mc:metacard)", output);
+
         verifyDefaults("1", output);
         verifyDefaults("2", output);
+        verifyDefaults("3", output);
+    }
+
+    @Test
+    public void testCompareSerialToFork() throws IOException, CatalogTransformerException {
+        SourceResponse response = givenSourceResponse(new MetacardStub("source1", "id1"),
+                new MetacardStub("source2", "id2"), new MetacardStub("source3", "id3"),
+                new MetacardStub("source4", "id4"));
+
+        XmlResponseQueueTransformer serialXform = new XmlResponseQueueTransformer(fjp);
+        serialXform.setThreshold(2);
+        XmlResponseQueueTransformer forkXForm = new XmlResponseQueueTransformer(fjp);
+        forkXForm.setThreshold(10);
+
+
+        BinaryContent serialBc = serialXform.transform(response, null);
+        BinaryContent forkBc = forkXForm.transform(response, null);
+
+        String serialOutput = new String(serialBc.getByteArray());
+        String forkOutput = new String(forkBc.getByteArray());
+
+        // There are expected whitespace differences between the outputs.
+        // This is an overly aggressive conversion; a better test would be to unmarshal the
+        // xml metacards back into Metacard instances and compare equality.
+        assertEquals(serialOutput.replaceAll("\\s", ""), forkOutput.replaceAll("\\s", ""));
     }
 
     @Test
@@ -314,9 +354,9 @@ public class TestXmlResponseQueueTransformer {
         final String testTitle = "Title!";
         final Date testDate = new Date();
         final String testLocation = "POLYGON ((35 10, 10 20, 15 40, 45 45, 35 10),(20 30, 35 35, 30 20, 20 30))";
-        final byte[] testThumbnail = {0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1,
-            1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1,
-            1};
+        final byte[] testThumbnail = {0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1,
+                1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1,
+                1};
 
         mc.setId(testId);
         mc.setSourceId(testSource);
@@ -325,22 +365,21 @@ public class TestXmlResponseQueueTransformer {
         mc.setLocation(testLocation);
         mc.setThumbnail(testThumbnail);
 
-        String metadata = null;
-        FileInputStream stream = new FileInputStream(new File("src/test/resources/extensibleMetacard.xml"));
-        try {
+        String metadata;
+        try (FileInputStream stream = new FileInputStream(
+                new File("src/test/resources/extensibleMetacard.xml"))) {
             FileChannel fc = stream.getChannel();
             MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
             /* Instead of using default, pass in a decoder. */
             metadata = Charset.defaultCharset().decode(bb).toString();
-        } finally {
-            stream.close();
         }
 
         mc.setMetadata(metadata);
 
-        Metacard mci = (Metacard) mc;
+        Metacard mci = mc;
 
-        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer();
+        XmlResponseQueueTransformer transformer = new XmlResponseQueueTransformer(fjp);
+        transformer.setThreshold(2);
 
         SourceResponse response = new SourceResponseImpl(null,
                 Arrays.asList((Result) new ResultImpl(mci)));
@@ -388,25 +427,25 @@ public class TestXmlResponseQueueTransformer {
     }
 
     /**
-     * @param index
-     *            TODO
+     * @param index  TODO
      * @param output
      * @throws IOException
      * @throws SAXException
      * @throws XpathException
      */
-    private void verifyDefaults(String index, String output) throws IOException, SAXException,
-        XpathException {
-        assertXpathEvaluatesTo(DEFAULT_TYPE_NAME, "/mc:metacards/mc:metacard[" + index
-                + "]/mc:type", output);
+    private void verifyDefaults(String index, String output)
+            throws IOException, SAXException, XpathException {
+        assertXpathEvaluatesTo(DEFAULT_TYPE_NAME,
+                "/mc:metacards/mc:metacard[" + index + "]/mc:type", output);
         assertXpathExists("/mc:metacards/mc:metacard[" + index
                 + "]/mc:geometry[@name='location']//gml:Polygon", output);
-        assertXpathExists("/mc:metacards/mc:metacard[" + index
-                + "]/mc:dateTime[@name='expiration']", output);
         assertXpathExists(
-                "/mc:metacards/mc:metacard[" + index + "]/mc:stringxml[@name='metadata']", output);
-        assertXpathEvaluatesTo(DEFAULT_TITLE, "/mc:metacards/mc:metacard[" + index
-                + "]/mc:string[@name='title']/mc:value", output);
+                "/mc:metacards/mc:metacard[" + index + "]/mc:dateTime[@name='expiration']", output);
+        assertXpathExists("/mc:metacards/mc:metacard[" + index + "]/mc:stringxml[@name='metadata']",
+                output);
+        assertXpathEvaluatesTo(DEFAULT_TITLE,
+                "/mc:metacards/mc:metacard[" + index + "]/mc:string[@name='title']/mc:value",
+                output);
         assertXpathEvaluatesTo(DEFAULT_BASE64, "/mc:metacards/mc:metacard[" + index
                 + "]/mc:base64Binary[@name='thumbnail']/mc:value", output);
     }
@@ -415,8 +454,8 @@ public class TestXmlResponseQueueTransformer {
      * @return
      */
     private SourceResponseImpl givenSourceResponse(String sourceId, String id) {
-        return new SourceResponseImpl(null, Arrays.asList((Result) new ResultImpl(new MetacardStub(
-                sourceId, id))));
+        return new SourceResponseImpl(null,
+                Arrays.asList((Result) new ResultImpl(new MetacardStub(sourceId, id))));
     }
 
     private SourceResponseImpl givenSourceResponse(Metacard... metacards) {
