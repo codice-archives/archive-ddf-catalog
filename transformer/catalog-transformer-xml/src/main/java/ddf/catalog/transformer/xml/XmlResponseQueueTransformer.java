@@ -151,7 +151,7 @@ public class XmlResponseQueueTransformer extends AbstractXmlTransformer
     }
 
     private static class MetacardForkTask extends RecursiveTask<StringWriter> {
-        private static final String dfStr = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+        private static final String DF_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
         private final ImmutableList<Result> resultList;
 
@@ -271,7 +271,7 @@ public class XmlResponseQueueTransformer extends AbstractXmlTransformer
                     break;
                 case DATE:
                     Date date = (Date) value;
-                    xmlValue = DateFormatUtils.formatUTC(date, dfStr);
+                    xmlValue = DateFormatUtils.formatUTC(date, DF_PATTERN);
                     break;
                 case GEOMETRY:
                     xmlValue = geoToXml(new GeometryTransformer().transform(attribute));
@@ -293,7 +293,7 @@ public class XmlResponseQueueTransformer extends AbstractXmlTransformer
 
                 // Write the node if we were able to convert it.
                 if (xmlValue != null) {
-                    writer.startNode(typeNameLookup.get(format));
+                    writer.startNode(TYPE_NAME_LOOKUP.get(format));
                     writer.addAttribute("name", attributeName);
                     writer.startNode("value");
 
@@ -344,9 +344,9 @@ public class XmlResponseQueueTransformer extends AbstractXmlTransformer
      * contexts until/unless we refactor and rewrite all XML processing, determines the attribute
      * names from the metacard schema. This lookup map provides an ugly shortcut for our purposes.
      */
-    private static final Map<AttributeType.AttributeFormat, String> typeNameLookup;
+    private static final Map<AttributeType.AttributeFormat, String> TYPE_NAME_LOOKUP;
 
-    private static final Map<String, String> namespaceMap;
+    private static final Map<String, String> NAMESPACE_MAP;
 
     static {
         try {
@@ -357,7 +357,7 @@ public class XmlResponseQueueTransformer extends AbstractXmlTransformer
             throw new ExceptionInInitializerError(e);
         }
 
-        typeNameLookup = new ImmutableMap.Builder<AttributeType.AttributeFormat, String>()
+        TYPE_NAME_LOOKUP = new ImmutableMap.Builder<AttributeType.AttributeFormat, String>()
                 .put(AttributeFormat.BINARY, "base64Binary").put(AttributeFormat.STRING, "string")
                 .put(AttributeFormat.BOOLEAN, "boolean").put(AttributeFormat.DATE, "dateTime")
                 .put(AttributeFormat.DOUBLE, "double").put(AttributeFormat.SHORT, "short")
@@ -368,7 +368,7 @@ public class XmlResponseQueueTransformer extends AbstractXmlTransformer
 
         String nsPrefix = "xmlns";
 
-        namespaceMap = new ImmutableMap.Builder<String, String>()
+        NAMESPACE_MAP = new ImmutableMap.Builder<String, String>()
                 .put(nsPrefix, "urn:catalog:metacard")
                 .put(nsPrefix + ":ns" + 1, "http://www.opengis.net/gml")
                 .put(nsPrefix + ":ns" + 2, "http://www.w3.org/1999/xlink")
@@ -410,7 +410,7 @@ public class XmlResponseQueueTransformer extends AbstractXmlTransformer
             MetaCardPrintWriter writer = new MetaCardPrintWriter(stringWriter);
 
             writer.startNode("metacards");
-            for (Map.Entry<String, String> nsRow : namespaceMap.entrySet()) {
+            for (Map.Entry<String, String> nsRow : NAMESPACE_MAP.entrySet()) {
                 writer.addAttribute(nsRow.getKey(), nsRow.getValue());
             }
 
