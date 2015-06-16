@@ -176,6 +176,9 @@
                     <suppressJMeterOutput>false</suppressJMeterOutput>
                     <ignoreResultFailures>true</ignoreResultFailures>
 
+                    <testFilesIncluded>
+                        <testFilesIncluded>XMLTransformerPerformance.jmx</testFilesIncluded>
+                    </testFilesIncluded>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -215,13 +218,26 @@
                 <configuration>
                     <inputFile>${project.build.directory}/jmeter/results/XMLTransformerPerformance.jtl</inputFile>
                     <graphs>
+                        <!-- ... you can declare more <graph>-elements here -->
                         <graph>
-                            <pluginType>ThreadsStateOverTime</pluginType>
+                            <pluginType>BytesThroughputOverTime</pluginType>
                             <width>800</width>
                             <height>600</height>
-                            <outputFile>${project.build.directory}/jmeter/results/XMLTransformerPerformance.png</outputFile>
+                            <outputFile>${project.build.directory}/jmeter/results/XMLTransformerPerformance2-bytes.png</outputFile>
                         </graph>
-                        <!-- ... you can declare more <graph>-elements here -->
+                        <graph>
+                            <pluginType>ThroughputVsThreads</pluginType>
+                            <width>800</width>
+                            <height>600</height>
+                            <outputFile>${project.build.directory}/jmeter/results/XMLTransformerPerformance2-thruvthreads.png</outputFile>
+                        </graph>
+                        <graph>
+                            <pluginType>TimesVsThreads</pluginType>
+                            <width>800</width>
+                            <height>600</height>
+                            <outputFile>${project.build.directory}/jmeter/results/XMLTransformerPerformance2-timevthreads.png</outputFile>
+                        </graph>
+
                     </graphs>
                 </configuration>
             </plugin>
