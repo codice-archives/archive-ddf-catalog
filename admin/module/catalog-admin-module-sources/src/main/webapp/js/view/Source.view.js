@@ -29,9 +29,10 @@ define([
     'text!templates/deleteSource.handlebars',
     'text!templates/sourcePage.handlebars',
     'text!templates/sourceList.handlebars',
-    'text!templates/sourceRow.handlebars'
+    'text!templates/sourceRow.handlebars',
+    'poller'
 ],
-function (ich,Marionette,_,$,Q,ModalSource,EmptyView,Service,Status,wreqr,Utils,deleteModal,deleteSource,sourcePage,sourceList,sourceRow) {
+function (ich,Marionette,_,$,Q,ModalSource,EmptyView,Service,Status,wreqr,Utils,deleteModal,deleteSource,sourcePage,sourceList,sourceRow, poller) {
 
     var SourceView = {};
 
@@ -58,6 +59,22 @@ function (ich,Marionette,_,$,Q,ModalSource,EmptyView,Service,Status,wreqr,Utils,
             this.listenTo(this.model, 'change', this.render);
             this.listenTo(wreqr.vent, 'status:update', this.updateStatus);
             this.getInitialStatuses();
+
+            var self = this;
+            if (this.model.has('currentConfiguration')) {
+                var pid = this.model.attributes.currentConfiguration.id;
+                var statusModel = new Status.List(pid);
+                statusModel.on('sync', function() {
+                     self.updateStatus(statusModel);
+                });
+
+                var options = {
+                    delay: 30000
+                };
+
+                var statusPoller = poller.get(statusModel, options);
+                statusPoller.start();
+            }
         },
         getInitialStatuses: function() {
             var statusModel = new Status.List();
@@ -123,18 +140,8 @@ function (ich,Marionette,_,$,Q,ModalSource,EmptyView,Service,Status,wreqr,Utils,
             evt.stopPropagation();
         },
         updateStatus: function(statusList) {
-            var model = this.model;
-            var currentStatus = statusList.find(function(status) {
-                return status.id === model.id;
-            });
-            var available = model.get('available');
-            if (currentStatus) {
-                var curAvail = currentStatus.get('available');
-                if (available !== curAvail) {
-                    model.set('available', curAvail);
-                    this.render();
-                }
-            }
+            this.model.set('available', statusList.models[0].get('value'));
+            this.render();
         }
     });
 
