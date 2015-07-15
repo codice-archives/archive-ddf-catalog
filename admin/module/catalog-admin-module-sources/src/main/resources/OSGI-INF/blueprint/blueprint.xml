@@ -22,14 +22,12 @@
     <service interface="org.codice.ddf.admin.application.plugin.ApplicationPlugin"
              ref="catalogPlugin"/>
 
-    <reference id="catalogFramework" interface="ddf.catalog.CatalogFramework"
-                    availability="optional">
-    </reference>
+    <reference id="configurationAdmin" interface="org.osgi.service.cm.ConfigurationAdmin"/>
 
     <bean id="adminSourcePoller"
           class="org.codice.ddf.catalog.admin.plugin.AdminSourcePollerServiceBean"
           init-method="init"
           destroy-method="destroy">
-        <argument ref="catalogFramework"/>
+        <argument ref="configurationAdmin"/>
     </bean>
 </blueprint>

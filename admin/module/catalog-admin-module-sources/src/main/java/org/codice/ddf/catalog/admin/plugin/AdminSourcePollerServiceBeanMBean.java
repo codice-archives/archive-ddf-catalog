@@ -14,8 +14,11 @@
 
 package org.codice.ddf.catalog.admin.plugin;
 
-public interface AdminSourcePollerServiceBeanMBean {
-    String hello();
+import java.util.List;
+import java.util.Map;
 
-    String sourceStatus(String id);
+public interface AdminSourcePollerServiceBeanMBean {
+    String sourceStatus(String servicePID);
+
+    List<Map<String, Object>> allSourceInfo();
 }
