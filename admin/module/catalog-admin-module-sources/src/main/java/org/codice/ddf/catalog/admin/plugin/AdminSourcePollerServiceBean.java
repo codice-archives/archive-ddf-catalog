@@ -14,54 +14,52 @@
 
 package org.codice.ddf.catalog.admin.plugin;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
+import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ddf.catalog.CatalogFramework;
-
-import ddf.catalog.operation.SourceInfoRequestEnterprise;
 import ddf.catalog.service.ConfiguredService;
-import ddf.catalog.source.CatalogProvider;
+import ddf.catalog.source.ConnectedSource;
 import ddf.catalog.source.FederatedSource;
 import ddf.catalog.source.Source;
-import ddf.catalog.source.SourceDescriptor;
-import ddf.catalog.source.SourceUnavailableException;
 
 public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBeanMBean {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(AdminSourcePollerServiceBean.class);
 
-    private CatalogFramework catalogFramework;
-
     private ObjectName objectName;
 
     private MBeanServer mBeanServer;
 
-    private  BundleContext bundleContext;
+    private BundleContext bundleContext;
 
-    public AdminSourcePollerServiceBean(CatalogFramework catalogFramework) {
-        LOGGER.error("WE ARE IN THE CONSTRUCTOR CAN WE SEE THIS");
+    private ConfigurationAdmin configurationAdmin;
 
-        this.catalogFramework = catalogFramework;
+    private Map<String, Object> configurationDataMap;
+
+    public AdminSourcePollerServiceBean(ConfigurationAdmin configurationAdmin) {
         bundleContext = getBundleContext();
+        this.configurationAdmin = configurationAdmin;
 
         try {
             objectName = new ObjectName(AdminSourcePollerServiceBean.class.getName()
@@ -71,7 +69,6 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
             LOGGER.error("Unable to create Insecure Defaults Service MBean with name [{}].",
                     objectName.toString(), e);
         }
-        LOGGER.error("EXITING THE CONSTRUCTOR");
     }
 
     public void init() {
@@ -103,112 +100,87 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
     }
 
     @Override
-    public String hello() {
-        return "Hello, World!";
+    public String sourceStatus(String servicePID) {
+        try {
+            List<ServiceReference<? extends Source>> sourceReferences = getServiceReferences();
+
+            for (ServiceReference<? extends Source> ref : sourceReferences) {
+                Source service = bundleContext.getService(ref);
+                if (service instanceof ConfiguredService) {
+                    ConfiguredService cs = (ConfiguredService) service;
+                    try {
+                        Configuration config = configurationAdmin
+                                .getConfiguration(cs.getConfigurationPid());
+                        if (config.getProperties().get("service.pid").equals(servicePID)) {
+                            boolean isAvailable = service.isAvailable();
+                            if (isAvailable) {
+                                return "true";
+                            }
+                        }
+
+                    } catch (IOException e) {
+                        LOGGER.warn("Couldn't find configuration for source '{}'", service.getId());
+                    }
+                } else {
+                    LOGGER.warn("Source '{}' not a configured service", service.getId());
+                }
+            }
+        } catch (InvalidSyntaxException e) {
+            LOGGER.error("Could not get service reference list");
+        }
+
+        return "false";
     }
 
     @Override
-    public String sourceStatus(String id) {
-        return "";
+    public List<Map<String, Object>> allSourceInfo() {
+        ArrayList<Map<String, Object>> result = new ArrayList<>();
+
+        try {
+            List<ServiceReference<? extends Source>> sourceReferences = getServiceReferences();
+
+            for (ServiceReference<? extends Source> ref : sourceReferences) {
+                Source service = bundleContext.getService(ref);
+                if (service instanceof ConfiguredService) {
+                    ConfiguredService cs = (ConfiguredService) service;
+                    try {
+                        Configuration config = configurationAdmin
+                                .getConfiguration(cs.getConfigurationPid());
+
+                        Map<String, Object> source = new HashMap<>();
+                        Dictionary<String, Object> properties = config.getProperties();
+                        for (String key : Collections.list(properties.keys())) {
+                            source.put(key, properties.get(key));
+                        }
+                        result.add(source);
+                    } catch (IOException e) {
+                        LOGGER.warn("Couldn't find configuration for source '{}'", service.getId());
+                    }
+                } else {
+                    LOGGER.warn("Source '{}' not a configured service", service.getId());
+                }
+            }
+        } catch (InvalidSyntaxException e) {
+            LOGGER.error("Could not get service reference list");
+        }
+
+        return result;
     }
 
     BundleContext getBundleContext() {
-        Bundle cxfBundle = FrameworkUtil.getBundle(AdminSourcePollerServiceBean.class);
-        if (cxfBundle != null) {
-            return cxfBundle.getBundleContext();
+        Bundle bundle = FrameworkUtil.getBundle(AdminSourcePollerServiceBean.class);
+        if (bundle != null) {
+            return bundle.getBundleContext();
         }
         return null;
     }
 
-    /**
-     * Returns a map of configuration data that should be appended to the configurationDataMap
-     * parameter. The configurationDataMap that is passed into this function is unmodifiable and is
-     * passed in to simply expose what information already exists.
-     *
-     * @param configurationPid
-     *            service.pid for the ConfigurationAdmin configuration
-     * @param configurationDataMap
-     *            map of what properties have already been added to the configuration in question
-     * @param bundleContext
-     *            used to retrieve list of services
-     * @return Map defining additional properties to add to the configuration
-     */
-    public Map<String, Object> getConfigurationData(String configurationPid,
-            Map<String, Object> configurationDataMap, BundleContext bundleContext) {
+    private List<ServiceReference<? extends Source>> getServiceReferences()
+            throws org.osgi.framework.InvalidSyntaxException {
+        List<ServiceReference<? extends Source>> refs = new ArrayList<ServiceReference<? extends Source>>();
 
-        LOGGER.debug("Obtaining configuration data for the following configuration PID: {}",
-                configurationPid);
-
-        Map<String, Object> statusMap = new HashMap<String, Object>();
-        try {
-            List<ServiceReference<? extends Source>> refs = new ArrayList<ServiceReference<? extends Source>>();
-
-            refs.addAll(bundleContext.getServiceReferences(FederatedSource.class, null));
-            refs.addAll(bundleContext.getServiceReferences(CatalogProvider.class, null));
-
-            Set<SourceDescriptor> sources = null;
-            if (catalogFramework != null) {
-                sources = catalogFramework.getSourceInfo(new SourceInfoRequestEnterprise(true))
-                        .getSourceInfo();
-            }
-            boolean foundSources = CollectionUtils.isNotEmpty(sources);
-
-            for (ServiceReference<? extends Source> ref : refs) {
-                Source superService = bundleContext.getService(ref);
-
-                if (superService instanceof ConfiguredService) {
-                    ConfiguredService cs = (ConfiguredService) superService;
-
-                    LOGGER.debug("ConfiguredService configuration PID: {}",
-                            cs.getConfigurationPid());
-
-                    boolean csConfigPidMatchesTargetPid = false;
-                    if (StringUtils.isNotEmpty(cs.getConfigurationPid()) && cs.getConfigurationPid()
-                            .equals(configurationPid)) {
-                        csConfigPidMatchesTargetPid = true;
-                    }
-
-                    if (foundSources) {
-                        // If the configured service pid does not match, for now
-                        // we're just going to assume that the metatype pid is
-                        // the same as the class because we have no other way to
-                        // match these things up. Obviously, this won't always
-                        // be the case and this isn't necessarily a good way to
-                        // do this. However, at the moment, there doesn't seem
-                        // to be any other way to match up this metatype pid
-                        // (which is what it ends up being in the case of a
-                        // ManagedService) with the actual service that gets
-                        // created. If, as in the Solr Catalog Provider case,
-                        // the metatype pid is actually the fully qualified
-                        // class name, then we can match them up this way.
-                        if (csConfigPidMatchesTargetPid || cs.getClass().getCanonicalName()
-                                .equals(configurationPid)) {
-
-                            for (SourceDescriptor descriptor : sources) {
-                                if (descriptor.getSourceId().equals(superService.getId())) {
-                                    statusMap.put("available", descriptor.isAvailable());
-                                    statusMap.put("sourceId", descriptor.getSourceId());
-                                    return statusMap;
-                                }
-                            }
-                        }
-                    } else if (csConfigPidMatchesTargetPid) {
-                        // we don't want to call isAvailable because that can
-                        // potentially block execution but if for some reason we
-                        // have no catalog framework, just hit the source
-                        // directly
-                        statusMap.put("available", superService.isAvailable());
-                        return statusMap;
-                    }
-                }
-            }
-        } catch (org.osgi.framework.InvalidSyntaxException ise) {
-            // this should never happen because the filter is always null
-            LOGGER.error("Error reading LDAP service filter", ise);
-        } catch (SourceUnavailableException sue) {
-            LOGGER.error("Unable to retrieve sources from Catalog Framework", sue);
-        }
-
-        return statusMap;
+        refs.addAll(bundleContext.getServiceReferences(FederatedSource.class, null));
+        refs.addAll(bundleContext.getServiceReferences(ConnectedSource.class, null));
+        return refs;
     }
 }
