@@ -34,6 +34,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.opengis.filter.expression.PropertyName;
 import org.opengis.filter.sort.SortBy;
 import org.opengis.filter.sort.SortOrder;
@@ -589,8 +590,33 @@ public class CachingFederationStrategy implements FederationStrategy, PostIngest
                     interruptRemainingSources(processingDetails, e);
                     break;
                 } catch (ExecutionException e) {
+                    logger.error("cause {}", ExceptionUtils.getCause(e));
+                    logger.error("log exception", e);
+                    logger.error("root cause", ExceptionUtils.getRootCause(e));
+                    logger.error("msg {}", ExceptionUtils.getMessage(e));
+                    logger.error("root msg {} ", ExceptionUtils.getRootCauseMessage(e));
+                    logger.error("nested? {}", ExceptionUtils.isNestedThrowable(e));
+                    logger.error("count? {} ", ExceptionUtils.getThrowableCount(e));
+                    for(Throwable th : (List<Throwable>)ExceptionUtils.getThrowableList(e)) {
+
+                        logger.warn("a throwable ",th);
+                    }
+
+
+                    /*
                     logger.warn("Couldn't get results from completed federated query for {}",
                             sourceId, e);
+                    logger.warn("Couldn't get results from completed federated query for {}",
+                            sourceId, ExceptionUtils.getRootCause(e));
+
+                    logger.error("root cause msg {}", ExceptionUtils.getRootCauseMessage(
+                            e));
+                    logger.error("root stack trace {}", ExceptionUtils.getRootCauseStackTrace(e)[0]);
+                    logger.error("e.getMessage {}", e.getMessage());
+                    */
+                    logger.warn("Couldn't get results from completed federated query for {}\n{}",
+                            sourceId, ExceptionUtils.getFullStackTrace(e));
+                    //logger.error("orig stack trace {}" , ExceptionUtils.getFullStackTrace(e));
                     processingDetails
                             .add(new ProcessingDetailsImpl(sourceId, e));
                 }
