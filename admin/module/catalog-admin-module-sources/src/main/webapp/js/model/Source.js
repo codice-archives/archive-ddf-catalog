@@ -13,14 +13,14 @@
  *
  **/
 /*global define*/
-define(function (require) {
-
-    var Backbone = require('backbone'),
-        Service = require('js/model/Service.js'),
-        _ = require('underscore');
-
-    require('backboneassociation');
-
+define([
+    'wreqr',
+    'js/model/Service.js',
+    'backbone',
+    'underscore',
+    'backboneassociation'
+],
+function (wreqr, Service, Backbone, _) {
     var Source = {};
 
     Source.ConfigurationList = Backbone.Collection.extend({
@@ -194,7 +194,7 @@ define(function (require) {
                     //       server for only ServiceFactories which produce FederatedSources and
                     //       ConnectedSources
                     if (( !_.isUndefined(id) && (id.indexOf('Source') !== -1 || id.indexOf('Service') !== -1) ||
-                            !_.isUndefined(name) && (name.indexOf('Source') !== -1 || name.indexOf('Service') !== -1)) && 
+                            !_.isUndefined(name) && (name.indexOf('Source') !== -1 || name.indexOf('Service') !== -1)) &&
                             !initialModel.hasConfiguration(service) && factory) {
                         var config = new Service.Configuration({service: service});
                         config.set('fpid', config.get('fpid') + '_disabled');

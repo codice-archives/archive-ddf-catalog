@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface AdminSourcePollerServiceBeanMBean {
-    String sourceStatus(String servicePID);
+    boolean sourceStatus(String servicePID);
 
     List<Map<String, Object>> allSourceInfo();
 }

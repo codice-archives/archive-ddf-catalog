@@ -338,7 +338,7 @@ define(function (require) {
     });
 
     Service.Response = Backbone.AssociatedModel.extend({
-        url: "/jolokia/exec/org.codice.ddf.ui.admin.api.ConfigurationAdmin:service=ui,version=2.3.0/listServices",
+        url: "/jolokia/exec/org.codice.ddf.catalog.admin.plugin.AdminSourcePollerServiceBean:service=admin-source-poller-service/allSourceInfo",
         relations: [
             {
                 type: Backbone.Many,
