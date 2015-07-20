@@ -70,7 +70,7 @@ The following endpoints are provided with the default Catalog out of the box:
 
 === DDF Catalog RESTful CRUD Endpoint
 
-The Catalog REST Endpoint allows clients to perform CRUD operations on the Catalog using REST, a simple architectural style that performs communication using HTTP. The URL exposing the REST functionality is located at http://<HOST>:<PORT>/services/catalog, where `HOST` is the IP address of where the distribution is installed and `PORT` is the port number on which the distribution is listening.
+The Catalog REST Endpoint allows clients to perform CRUD operations on the Catalog using REST, a simple architectural style that performs communication using HTTP. The URL exposing the REST functionality is located at \http://<HOST>:<PORT>/services/catalog, where `HOST` is the IP address of where the distribution is installed and `PORT` is the port number on which the distribution is listening.
 
 ==== Installing and Uninstalling
 
@@ -95,20 +95,21 @@ The RESTful CRUD Endpoint provides the capability to query, create, update, and 
 |create
 |HTTP POST
 |HTTP request body contains the input to be ingested. See InputTransformers for more information.
-|`http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog`
+|\http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog
 
 |update
 |HTTP PUT
-|The ID of the Metacard to be updated is appended to the end of the URL. +
+|The ID of the Metacard to be updated is appended to the end of the URL.
 The updated metadata is contained in the HTTP body.
 
-|`http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/<metacardId>`+
+a|\http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/<metacardId>
+
 where `<metacardId>` is the Metacard.ID of the metacard to be updated
 
 |delete
 |HTTP DELETE
 |The ID of the Metacard to be deleted is appended to the end of the URL.
-|`http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/<metacardId>`
+a|\http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/<metacardId>
 
 where `<metacardId>` is the Metacard.ID of the metacard to be deleted
 
@@ -118,21 +119,22 @@ where `<metacardId>` is the Metacard.ID of the metacard to be deleted
 |The ID of the Metacard to be retrieved is appended to the end of the URL. +
 By default, the response body will include the XML representation of the Metacard.
 
-|`http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/<metacardId>`+
+a|\http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/<metacardId>+
 where <metacardId> is the Metacard.ID of the metacard to be retrieved
 
 |federated read
 |HTTP GET
 |The SOURCE ID of a federated source is appended in the URL before the ID of the Metacard to be retrieved is appended to the end.
 
-|`http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/sources/<sourceId>/<metacardId>` +
+a|\http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/sources/<sourceId>/<metacardId>
+
 where <sourceid> is the FEDERATED SOURCE ID and <metacardId> is the Metacard.ID of the Metacard to be retrieved
 
 |sources
 |HTTP GET
 |Retrieves information about federated sources, including sourceid, availability, contentTypes,and version.
 
-|`http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/sources/`
+a|\http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/sources/
 
 |===
 
@@ -188,7 +190,7 @@ http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/<metacardId>?tra
 [TIP]
 ====
 Transforms also work on read operations for metacards in federated sources.
-http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/sources/<sourceId>/<metacardId>?transform=<TRANSFORMER_ID>
+\http://<DISTRIBUTION_HOST>:<DISTRIBUTION_PORT>/services/catalog/sources/<sourceId>/<metacardId>?transform=<TRANSFORMER_ID>
 ====
 
 ===== Metacard Transforms Available in DDF
@@ -286,7 +288,7 @@ Many modern web browsers currently act as OpenSearch clients. The request call i
 Example of an OpenSearch request:
 
 ----
-http://<ddf_host>:8181/services/catalog/query?q=Predator
+\http://<ddf_host>:8181/services/catalog/query?q=Predator
 ----
 
 This request performs a full-text search for the phrase 'Predator' on the DDF providers and provides the results as Atom-formatted XML for the web browser to render.
