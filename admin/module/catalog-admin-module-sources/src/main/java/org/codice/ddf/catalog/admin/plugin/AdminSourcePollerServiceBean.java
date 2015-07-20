@@ -28,6 +28,7 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
+import org.codice.ddf.ui.admin.api.ConfigurationAdminExt;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
@@ -35,6 +36,8 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.metatype.ObjectClassDefinition;
+import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +47,30 @@ import ddf.catalog.source.FederatedSource;
 import ddf.catalog.source.Source;
 
 public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBeanMBean {
+    static final String META_TYPE_NAME = "org.osgi.service.metatype.MetaTypeService";
+
     private static final Logger LOGGER = LoggerFactory
             .getLogger(AdminSourcePollerServiceBean.class);
+
+    private static final String MAP_ENTRY_ID = "id";
+
+    private static final String MAP_ENTRY_NAME = "name";
+
+    private static final String MAP_ENTRY_METATYPE = "metatype";
+
+    private static final String MAP_ENTRY_CARDINALITY = "cardinality";
+
+    private static final String MAP_ENTRY_DEFAULT_VALUE = "defaultValue";
+
+    private static final String MAP_ENTRY_DESCRIPTION = "description";
+
+    private static final String MAP_ENTRY_TYPE = "type";
+
+    private static final String MAP_ENTRY_OPTION_LABELS = "optionLabels";
+
+    private static final String MAP_ENTRY_OPTION_VALUES = "optionValues";
+
+    private final Map<String, ServiceTracker> services = new HashMap<>();
 
     private ObjectName objectName;
 
@@ -54,8 +79,6 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
     private BundleContext bundleContext;
 
     private ConfigurationAdmin configurationAdmin;
-
-    private Map<String, Object> configurationDataMap;
 
     public AdminSourcePollerServiceBean(ConfigurationAdmin configurationAdmin) {
         bundleContext = getBundleContext();
@@ -100,7 +123,7 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
     }
 
     @Override
-    public String sourceStatus(String servicePID) {
+    public boolean sourceStatus(String servicePID) {
         try {
             List<ServiceReference<? extends Source>> sourceReferences = getServiceReferences();
 
@@ -112,10 +135,7 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
                         Configuration config = configurationAdmin
                                 .getConfiguration(cs.getConfigurationPid());
                         if (config.getProperties().get("service.pid").equals(servicePID)) {
-                            boolean isAvailable = service.isAvailable();
-                            if (isAvailable) {
-                                return "true";
-                            }
+                            return service.isAvailable();
                         }
 
                     } catch (IOException e) {
@@ -129,42 +149,67 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
             LOGGER.error("Could not get service reference list");
         }
 
-        return "false";
+        return false;
     }
 
     @Override
     public List<Map<String, Object>> allSourceInfo() {
-        ArrayList<Map<String, Object>> result = new ArrayList<>();
+        ConfigurationAdminExt configAdminExt = new ConfigurationAdminExt(configurationAdmin);
+        Map nameMap = configAdminExt.getFactoryPidObjectClasses();
 
-        try {
-            List<ServiceReference<? extends Source>> sourceReferences = getServiceReferences();
+        // Get list of metatypes
+        List<Map<String, Object>> metatypes = configAdminExt
+                .addMetaTypeNamesToMap(configAdminExt.getFactoryPidObjectClasses(), "",
+                        "service.factoryPid");
 
-            for (ServiceReference<? extends Source> ref : sourceReferences) {
-                Source service = bundleContext.getService(ref);
-                if (service instanceof ConfiguredService) {
-                    ConfiguredService cs = (ConfiguredService) service;
-                    try {
-                        Configuration config = configurationAdmin
-                                .getConfiguration(cs.getConfigurationPid());
+        // Loop through each metatype and find its configurations
+        for (Map metatype : metatypes) {
+            try {
+                Configuration[] configs = configurationAdmin.listConfigurations(
+                        "(|(service.factoryPid=" + metatype.get("id") + ")(service.factoryPid="
+                                + metatype.get("id") + "_disabled))");
 
+                ArrayList<Map<String, Object>> configurations = new ArrayList<>();
+                if (configs != null) {
+                    for (Configuration config : configs) {
                         Map<String, Object> source = new HashMap<>();
-                        Dictionary<String, Object> properties = config.getProperties();
-                        for (String key : Collections.list(properties.keys())) {
-                            source.put(key, properties.get(key));
+
+                        boolean disabled = config.getPid().contains("_disabled");
+                        source.put("id", config.getPid());
+                        source.put("enabled", !disabled);
+                        source.put("fpid", config.getFactoryPid());
+
+                        if (!disabled) {
+                            source.put("name",
+                                    ((ObjectClassDefinition) nameMap.get(config.getFactoryPid()))
+                                            .getName());
+                            source.put("bundle_name", configAdminExt.getName(
+                                    getBundleContext().getBundle(config.getBundleLocation())));
+                            source.put("bundle_location", config.getBundleLocation());
+                            source.put("bundle",
+                                    getBundleContext().getBundle(config.getBundleLocation())
+                                            .getBundleId());
+                        } else {
+                            source.put("name", config.getPid());
                         }
-                        result.add(source);
-                    } catch (IOException e) {
-                        LOGGER.warn("Couldn't find configuration for source '{}'", service.getId());
+
+                        Dictionary<String, Object> properties = config.getProperties();
+                        Map<String, Object> plist = new HashMap<>();
+                        for (String key : Collections.list(properties.keys())) {
+                            plist.put(key, properties.get(key));
+                        }
+                        source.put("properties", plist);
+
+                        configurations.add(source);
                     }
-                } else {
-                    LOGGER.warn("Source '{}' not a configured service", service.getId());
+                    metatype.put("configurations", configurations);
                 }
+            } catch (Exception e) {
+                LOGGER.warn("Error getting source info: {}", e.getMessage());
             }
-        } catch (InvalidSyntaxException e) {
-            LOGGER.error("Could not get service reference list");
         }
 
-        return result;
+        return metatypes;
     }
 
     BundleContext getBundleContext() {
@@ -177,7 +222,7 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
 
     private List<ServiceReference<? extends Source>> getServiceReferences()
             throws org.osgi.framework.InvalidSyntaxException {
-        List<ServiceReference<? extends Source>> refs = new ArrayList<ServiceReference<? extends Source>>();
+        List<ServiceReference<? extends Source>> refs = new ArrayList<>();
 
         refs.addAll(bundleContext.getServiceReferences(FederatedSource.class, null));
         refs.addAll(bundleContext.getServiceReferences(ConnectedSource.class, null));

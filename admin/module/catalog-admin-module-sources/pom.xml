@@ -90,6 +90,9 @@
                             *,
                             org.joda.time;version="[1.6.0,3.0.0)"
                         </Import-Package>
+                        <Embed-Dependency>
+                            admin-core
+                        </Embed-Dependency>
                     </instructions>
                 </configuration>
             </plugin>
