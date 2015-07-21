@@ -184,22 +184,9 @@ function (wreqr, Service, Backbone, _) {
             
             if(serviceCollection) {
                 serviceCollection.each(function(service) {
-                    var id = service.get('id');
-                    var name = service.get('name');
-                    var factory = service.get('factory');
-
-                    // Looks for any service factory which produces services which contain
-                    // Source or Service in the name or in the service id
-                    // TODO: Find a more reliable solution, in particular, perhaps, querying the
-                    //       server for only ServiceFactories which produce FederatedSources and
-                    //       ConnectedSources
-                    if (( !_.isUndefined(id) && (id.indexOf('Source') !== -1 || id.indexOf('Service') !== -1) ||
-                            !_.isUndefined(name) && (name.indexOf('Source') !== -1 || name.indexOf('Service') !== -1)) &&
-                            !initialModel.hasConfiguration(service) && factory) {
-                        var config = new Service.Configuration({service: service});
-                        config.set('fpid', config.get('fpid') + '_disabled');
-                        initialModel.addDisabledConfiguration(config);
-                    }
+                    var config = new Service.Configuration({service: service});
+                    config.set('fpid', config.get('fpid') + '_disabled');
+                    initialModel.addDisabledConfiguration(config);
                 });
             }
             return initialModel;
