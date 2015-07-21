@@ -60,12 +60,12 @@ function (ich,Marionette,_,$,Q,ModalSource,EmptyView,Service,Status,wreqr,Utils,
             this.listenTo(wreqr.vent, 'status:update', this.updateStatus);
             this.getInitialStatuses();
 
-            var me = this;
+            var self = this;
             if (this.model.has('currentConfiguration')) {
                 var pid = this.model.attributes.currentConfiguration.id;
                 var statusModel = new Status.List(pid);
                 statusModel.on('sync', function() {
-                     me.updateStatus(statusModel);
+                     self.updateStatus(statusModel);
                 });
 
                 var options = {

@@ -37,7 +37,6 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.metatype.ObjectClassDefinition;
-import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,57 +53,61 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
 
     private static final String MAP_ENTRY_ID = "id";
 
+    private static final String MAP_ENTRY_ENABLED = "enabled";
+
+    private static final String MAP_ENTRY_FPID = "fpid";
+
     private static final String MAP_ENTRY_NAME = "name";
 
-    private static final String MAP_ENTRY_METATYPE = "metatype";
+    private static final String MAP_ENTRY_BUNDLE_NAME = "bundle_name";
 
-    private static final String MAP_ENTRY_CARDINALITY = "cardinality";
+    private static final String MAP_ENTRY_BUNDLE_LOCATION = "bundle_location";
 
-    private static final String MAP_ENTRY_DEFAULT_VALUE = "defaultValue";
+    private static final String MAP_ENTRY_BUNDLE = "bundle";
 
-    private static final String MAP_ENTRY_DESCRIPTION = "description";
+    private static final String MAP_ENTRY_PROPERTIES = "properties";
 
-    private static final String MAP_ENTRY_TYPE = "type";
+    private static final String MAP_ENTRY_CONFIGURATIONS = "configurations";
 
-    private static final String MAP_ENTRY_OPTION_LABELS = "optionLabels";
+    private static final String DISABLED = "_disabled";
 
-    private static final String MAP_ENTRY_OPTION_VALUES = "optionValues";
+    private static final String SERVICE_NAME = ":service=admin-source-poller-service";
 
-    private final Map<String, ServiceTracker> services = new HashMap<>();
+    private final ObjectName objectName;
 
-    private ObjectName objectName;
+    private final MBeanServer mBeanServer;
 
-    private MBeanServer mBeanServer;
+    private final BundleContext bundleContext;
 
-    private BundleContext bundleContext;
-
-    private ConfigurationAdmin configurationAdmin;
+    private final ConfigurationAdmin configurationAdmin;
 
     public AdminSourcePollerServiceBean(ConfigurationAdmin configurationAdmin) {
         bundleContext = getBundleContext();
         this.configurationAdmin = configurationAdmin;
-
+        mBeanServer = ManagementFactory.getPlatformMBeanServer();
+        ObjectName objName = null;
         try {
-            objectName = new ObjectName(AdminSourcePollerServiceBean.class.getName()
-                    + ":service=admin-source-poller-service");
-            mBeanServer = ManagementFactory.getPlatformMBeanServer();
+            objName = new ObjectName(
+                    AdminSourcePollerServiceBean.class.getName() + SERVICE_NAME);
         } catch (MalformedObjectNameException e) {
-            LOGGER.error("Unable to create Insecure Defaults Service MBean with name [{}].",
-                    objectName.toString(), e);
+            LOGGER.error("Unable to create Admin Source Poller Service MBean with name [{}].",
+                    AdminSourcePollerServiceBean.class.getName() + SERVICE_NAME, e);
         }
+        objectName = objName;
     }
 
     public void init() {
         try {
             try {
                 mBeanServer.registerMBean(this, objectName);
-                LOGGER.info("Registered Insecure Defaults Service MBean under object name: {}",
+                LOGGER.info(
+                        "Registered Admin Source Poller Service Service MBean under object name: {}",
                         objectName.toString());
             } catch (InstanceAlreadyExistsException e) {
                 // Try to remove and re-register
                 mBeanServer.unregisterMBean(objectName);
                 mBeanServer.registerMBean(this, objectName);
-                LOGGER.info("Re-registered Insecure Defaults Service MBean");
+                LOGGER.info("Re-registered Admin Source Poller Service Service MBean");
             }
         } catch (Exception e) {
             LOGGER.error("Could not register MBean [{}].", objectName.toString(), e);
@@ -115,7 +118,7 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
         try {
             if (objectName != null && mBeanServer != null) {
                 mBeanServer.unregisterMBean(objectName);
-                LOGGER.info("Unregistered Insecure Defaults Service MBean");
+                LOGGER.info("Unregistered Admin Source Poller Service Service MBean");
             }
         } catch (Exception e) {
             LOGGER.error("Exception unregistering MBean [{}].", objectName.toString(), e);
@@ -166,31 +169,30 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
         for (Map metatype : metatypes) {
             try {
                 Configuration[] configs = configurationAdmin.listConfigurations(
-                        "(|(service.factoryPid=" + metatype.get("id") + ")(service.factoryPid="
-                                + metatype.get("id") + "_disabled))");
+                        "(|(service.factoryPid=" + metatype.get(MAP_ENTRY_ID)
+                                + ")(service.factoryPid=" + metatype.get(MAP_ENTRY_ID) + DISABLED
+                                + "))");
 
                 ArrayList<Map<String, Object>> configurations = new ArrayList<>();
                 if (configs != null) {
                     for (Configuration config : configs) {
                         Map<String, Object> source = new HashMap<>();
 
-                        boolean disabled = config.getPid().contains("_disabled");
-                        source.put("id", config.getPid());
-                        source.put("enabled", !disabled);
-                        source.put("fpid", config.getFactoryPid());
+                        boolean disabled = config.getPid().contains(DISABLED);
+                        source.put(MAP_ENTRY_ID, config.getPid());
+                        source.put(MAP_ENTRY_ENABLED, !disabled);
+                        source.put(MAP_ENTRY_FPID, config.getFactoryPid());
 
                         if (!disabled) {
-                            source.put("name",
+                            source.put(MAP_ENTRY_NAME,
                                     ((ObjectClassDefinition) nameMap.get(config.getFactoryPid()))
                                             .getName());
-                            source.put("bundle_name", configAdminExt.getName(
-                                    getBundleContext().getBundle(config.getBundleLocation())));
-                            source.put("bundle_location", config.getBundleLocation());
-                            source.put("bundle",
-                                    getBundleContext().getBundle(config.getBundleLocation())
+                            source.put(MAP_ENTRY_BUNDLE_NAME, configAdminExt.getName(bundleContext.getBundle(config.getBundleLocation())));
+                            source.put(MAP_ENTRY_BUNDLE_LOCATION, config.getBundleLocation());
+                            source.put(MAP_ENTRY_BUNDLE, bundleContext.getBundle(config.getBundleLocation())
                                             .getBundleId());
                         } else {
-                            source.put("name", config.getPid());
+                            source.put(MAP_ENTRY_NAME, config.getPid());
                         }
 
                         Dictionary<String, Object> properties = config.getProperties();
@@ -198,11 +200,11 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
                         for (String key : Collections.list(properties.keys())) {
                             plist.put(key, properties.get(key));
                         }
-                        source.put("properties", plist);
+                        source.put(MAP_ENTRY_PROPERTIES, plist);
 
                         configurations.add(source);
                     }
-                    metatype.put("configurations", configurations);
+                    metatype.put(MAP_ENTRY_CONFIGURATIONS, configurations);
                 }
             } catch (Exception e) {
                 LOGGER.warn("Error getting source info: {}", e.getMessage());
