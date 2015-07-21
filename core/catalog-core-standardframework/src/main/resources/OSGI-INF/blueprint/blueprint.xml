@@ -152,6 +152,9 @@
         </argument>
     </bean>
 
+    <service ref="solrCatalogCache" interface="org.codice.ddf.configuration.ConfigurationWatcher">
+    </service>
+
 	<bean id="sorted" class="ddf.catalog.cache.solr.impl.CachingFederationStrategy"
           destroy-method="shutdown">
 		<cm:managed-properties
