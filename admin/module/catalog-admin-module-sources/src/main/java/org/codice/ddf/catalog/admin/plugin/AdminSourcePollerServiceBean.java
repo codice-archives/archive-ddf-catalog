@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
@@ -87,8 +88,7 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
         mBeanServer = ManagementFactory.getPlatformMBeanServer();
         ObjectName objName = null;
         try {
-            objName = new ObjectName(
-                    AdminSourcePollerServiceBean.class.getName() + SERVICE_NAME);
+            objName = new ObjectName(AdminSourcePollerServiceBean.class.getName() + SERVICE_NAME);
         } catch (MalformedObjectNameException e) {
             LOGGER.error("Unable to create Admin Source Poller Service MBean with name [{}].",
                     AdminSourcePollerServiceBean.class.getName() + SERVICE_NAME, e);
@@ -162,7 +162,8 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
 
         // Get list of metatypes
         List<Map<String, Object>> metatypes = configAdminExt
-                .addMetaTypeNamesToMap(configAdminExt.getFactoryPidObjectClasses(), "",
+                .addMetaTypeNamesToMap(configAdminExt.getFactoryPidObjectClasses(),
+                        "(|(service.factoryPid=*source)(service.factoryPid=*Source)(service.factoryPid=*service)(service.factoryPid=*Service))",
                         "service.factoryPid");
 
         // Loop through each metatype and find its configurations
@@ -187,9 +188,11 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
                             source.put(MAP_ENTRY_NAME,
                                     ((ObjectClassDefinition) nameMap.get(config.getFactoryPid()))
                                             .getName());
-                            source.put(MAP_ENTRY_BUNDLE_NAME, configAdminExt.getName(bundleContext.getBundle(config.getBundleLocation())));
+                            source.put(MAP_ENTRY_BUNDLE_NAME, configAdminExt
+                                    .getName(bundleContext.getBundle(config.getBundleLocation())));
                             source.put(MAP_ENTRY_BUNDLE_LOCATION, config.getBundleLocation());
-                            source.put(MAP_ENTRY_BUNDLE, bundleContext.getBundle(config.getBundleLocation())
+                            source.put(MAP_ENTRY_BUNDLE,
+                                    bundleContext.getBundle(config.getBundleLocation())
                                             .getBundleId());
                         } else {
                             source.put(MAP_ENTRY_NAME, config.getPid());
@@ -211,6 +214,12 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
             }
         }
 
+        Collections.sort(metatypes, new Comparator<Map<String, Object>>() {
+            @Override
+            public int compare(Map<String, Object> o1, Map<String, Object> o2) {
+                return ((String) o1.get("id")).compareToIgnoreCase((String) o2.get("id"));
+            }
+        });
         return metatypes;
     }
 
