@@ -78,12 +78,9 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
 
     private final MBeanServer mBeanServer;
 
-    private final BundleContext bundleContext;
-
     private final ConfigurationAdmin configurationAdmin;
 
     public AdminSourcePollerServiceBean(ConfigurationAdmin configurationAdmin) {
-        bundleContext = getBundleContext();
         this.configurationAdmin = configurationAdmin;
         mBeanServer = ManagementFactory.getPlatformMBeanServer();
         ObjectName objName = null;
@@ -131,7 +128,7 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
             List<ServiceReference<? extends Source>> sourceReferences = getServiceReferences();
 
             for (ServiceReference<? extends Source> ref : sourceReferences) {
-                Source service = bundleContext.getService(ref);
+                Source service = getBundleContext().getService(ref);
                 if (service instanceof ConfiguredService) {
                     ConfiguredService cs = (ConfiguredService) service;
                     try {
@@ -189,10 +186,10 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
                                     ((ObjectClassDefinition) nameMap.get(config.getFactoryPid()))
                                             .getName());
                             source.put(MAP_ENTRY_BUNDLE_NAME, configAdminExt
-                                    .getName(bundleContext.getBundle(config.getBundleLocation())));
+                                    .getName(getBundleContext().getBundle(config.getBundleLocation())));
                             source.put(MAP_ENTRY_BUNDLE_LOCATION, config.getBundleLocation());
                             source.put(MAP_ENTRY_BUNDLE,
-                                    bundleContext.getBundle(config.getBundleLocation())
+                                    getBundleContext().getBundle(config.getBundleLocation())
                                             .getBundleId());
                         } else {
                             source.put(MAP_ENTRY_NAME, config.getPid());
@@ -223,7 +220,7 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
         return metatypes;
     }
 
-    BundleContext getBundleContext() {
+    protected BundleContext getBundleContext() {
         Bundle bundle = FrameworkUtil.getBundle(AdminSourcePollerServiceBean.class);
         if (bundle != null) {
             return bundle.getBundleContext();
@@ -235,8 +232,8 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
             throws org.osgi.framework.InvalidSyntaxException {
         List<ServiceReference<? extends Source>> refs = new ArrayList<>();
 
-        refs.addAll(bundleContext.getServiceReferences(FederatedSource.class, null));
-        refs.addAll(bundleContext.getServiceReferences(ConnectedSource.class, null));
+        refs.addAll(getBundleContext().getServiceReferences(FederatedSource.class, null));
+        refs.addAll(getBundleContext().getServiceReferences(ConnectedSource.class, null));
         return refs;
     }
 }
