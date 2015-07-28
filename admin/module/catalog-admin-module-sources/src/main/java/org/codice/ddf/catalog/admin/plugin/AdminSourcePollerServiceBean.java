@@ -78,10 +78,12 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
 
     private final MBeanServer mBeanServer;
 
-    private final ConfigurationAdmin configurationAdmin;
+    private final OsgiHelper helper;
 
     public AdminSourcePollerServiceBean(ConfigurationAdmin configurationAdmin) {
-        this.configurationAdmin = configurationAdmin;
+        helper = getHelper();
+        helper.configurationAdmin = configurationAdmin;
+
         mBeanServer = ManagementFactory.getPlatformMBeanServer();
         ObjectName objName = null;
         try {
@@ -125,15 +127,15 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
     @Override
     public boolean sourceStatus(String servicePID) {
         try {
-            List<ServiceReference<? extends Source>> sourceReferences = getServiceReferences();
+            List<ServiceReference<? extends Source>> sourceReferences = helper
+                    .getServiceReferences();
 
             for (ServiceReference<? extends Source> ref : sourceReferences) {
-                Source service = getBundleContext().getService(ref);
+                Source service = helper.getService(ref);
                 if (service instanceof ConfiguredService) {
                     ConfiguredService cs = (ConfiguredService) service;
                     try {
-                        Configuration config = configurationAdmin
-                                .getConfiguration(cs.getConfigurationPid());
+                        Configuration config = helper.getConfiguration(cs);
                         if (config.getProperties().get("service.pid").equals(servicePID)) {
                             return service.isAvailable();
                         }
@@ -154,22 +156,15 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
 
     @Override
     public List<Map<String, Object>> allSourceInfo() {
-        ConfigurationAdminExt configAdminExt = new ConfigurationAdminExt(configurationAdmin);
-        Map nameMap = configAdminExt.getFactoryPidObjectClasses();
+        Map nameMap = helper.getNameMap();
 
         // Get list of metatypes
-        List<Map<String, Object>> metatypes = configAdminExt
-                .addMetaTypeNamesToMap(configAdminExt.getFactoryPidObjectClasses(),
-                        "(|(service.factoryPid=*source)(service.factoryPid=*Source)(service.factoryPid=*service)(service.factoryPid=*Service))",
-                        "service.factoryPid");
+        List<Map<String, Object>> metatypes = helper.getMetatypes();
 
         // Loop through each metatype and find its configurations
         for (Map metatype : metatypes) {
             try {
-                Configuration[] configs = configurationAdmin.listConfigurations(
-                        "(|(service.factoryPid=" + metatype.get(MAP_ENTRY_ID)
-                                + ")(service.factoryPid=" + metatype.get(MAP_ENTRY_ID) + DISABLED
-                                + "))");
+                Configuration[] configs = helper.getConfigurations(metatype);
 
                 ArrayList<Map<String, Object>> configurations = new ArrayList<>();
                 if (configs != null) {
@@ -182,15 +177,10 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
                         source.put(MAP_ENTRY_FPID, config.getFactoryPid());
 
                         if (!disabled) {
-                            source.put(MAP_ENTRY_NAME,
-                                    ((ObjectClassDefinition) nameMap.get(config.getFactoryPid()))
-                                            .getName());
-                            source.put(MAP_ENTRY_BUNDLE_NAME, configAdminExt
-                                    .getName(getBundleContext().getBundle(config.getBundleLocation())));
+                            source.put(MAP_ENTRY_NAME, helper.getName(config));
+                            source.put(MAP_ENTRY_BUNDLE_NAME, helper.getBundleName(config));
                             source.put(MAP_ENTRY_BUNDLE_LOCATION, config.getBundleLocation());
-                            source.put(MAP_ENTRY_BUNDLE,
-                                    getBundleContext().getBundle(config.getBundleLocation())
-                                            .getBundleId());
+                            source.put(MAP_ENTRY_BUNDLE, helper.getBundleId(config));
                         } else {
                             source.put(MAP_ENTRY_NAME, config.getPid());
                         }
@@ -220,20 +210,71 @@ public class AdminSourcePollerServiceBean implements AdminSourcePollerServiceBea
         return metatypes;
     }
 
-    protected BundleContext getBundleContext() {
-        Bundle bundle = FrameworkUtil.getBundle(AdminSourcePollerServiceBean.class);
-        if (bundle != null) {
-            return bundle.getBundleContext();
-        }
-        return null;
+    protected OsgiHelper getHelper() {
+        return new OsgiHelper();
     }
 
-    private List<ServiceReference<? extends Source>> getServiceReferences()
-            throws org.osgi.framework.InvalidSyntaxException {
-        List<ServiceReference<? extends Source>> refs = new ArrayList<>();
+    public class OsgiHelper {
+        protected ConfigurationAdmin configurationAdmin;
 
-        refs.addAll(getBundleContext().getServiceReferences(FederatedSource.class, null));
-        refs.addAll(getBundleContext().getServiceReferences(ConnectedSource.class, null));
-        return refs;
+        protected BundleContext getBundleContext() {
+            Bundle bundle = FrameworkUtil.getBundle(AdminSourcePollerServiceBean.class);
+            if (bundle != null) {
+                return bundle.getBundleContext();
+            }
+            return null;
+        }
+
+        protected List<ServiceReference<? extends Source>> getServiceReferences()
+                throws org.osgi.framework.InvalidSyntaxException {
+            List<ServiceReference<? extends Source>> refs = new ArrayList<>();
+
+            refs.addAll(
+                    helper.getBundleContext().getServiceReferences(FederatedSource.class, null));
+            refs.addAll(
+                    helper.getBundleContext().getServiceReferences(ConnectedSource.class, null));
+            return refs;
+        }
+
+        protected List<Map<String, Object>> getMetatypes() {
+            ConfigurationAdminExt configAdminExt = new ConfigurationAdminExt(configurationAdmin);
+            return configAdminExt.addMetaTypeNamesToMap(configAdminExt.getFactoryPidObjectClasses(),
+                    "(|(service.factoryPid=*source)(service.factoryPid=*Source)(service.factoryPid=*service)(service.factoryPid=*Service))",
+                    "service.factoryPid");
+        }
+
+        protected Map getNameMap() {
+            ConfigurationAdminExt configAdminExt = new ConfigurationAdminExt(configurationAdmin);
+            return configAdminExt.getFactoryPidObjectClasses();
+        }
+
+        protected Configuration[] getConfigurations(Map metatype)
+                throws InvalidSyntaxException, IOException {
+            return configurationAdmin.listConfigurations(
+                    "(|(service.factoryPid=" + metatype.get(MAP_ENTRY_ID) + ")(service.factoryPid="
+                            + metatype.get(MAP_ENTRY_ID) + DISABLED + "))");
+        }
+
+        protected Configuration getConfiguration(ConfiguredService cs) throws IOException {
+            return configurationAdmin.getConfiguration(cs.getConfigurationPid());
+        }
+
+        protected String getBundleName(Configuration config) {
+            ConfigurationAdminExt configAdminExt = new ConfigurationAdminExt(configurationAdmin);
+            return configAdminExt
+                    .getName(helper.getBundleContext().getBundle(config.getBundleLocation()));
+        }
+
+        protected long getBundleId(Configuration config) {
+            return getBundleContext().getBundle(config.getBundleLocation()).getBundleId();
+        }
+
+        protected Source getService(ServiceReference<? extends Source> ref) {
+            return getBundleContext().getService(ref);
+        }
+
+        protected String getName(Configuration config) {
+            return ((ObjectClassDefinition) getNameMap().get(config.getFactoryPid())).getName();
+        }
     }
 }

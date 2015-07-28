@@ -140,7 +140,7 @@ function (ich,Marionette,_,$,Q,ModalSource,EmptyView,Service,Status,wreqr,Utils,
             evt.stopPropagation();
         },
         updateStatus: function(statusList) {
-            this.model.set('available', statusList.models.at(0).get('value'));
+            this.model.set('available', statusList.models[0].get('value'));
             this.render();
         }
     });
