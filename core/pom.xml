@@ -32,6 +32,7 @@
         <powermock.agent>
             ${settings.localRepository}/org/powermock/powermock-module-javaagent/${powermock.version}/powermock-module-javaagent-${powermock.version}.jar
         </powermock.agent>
+        <rrd4j.version>2.2</rrd4j.version>
     </properties>
 
     <dependencyManagement>
