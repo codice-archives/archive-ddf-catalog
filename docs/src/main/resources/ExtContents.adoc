@@ -2920,7 +2920,7 @@ The procedure for implementing any of the source types follows a similar format:
 . Deploy to DDF. (Refer to the Working with OSGi - Bundles section.)
 [IMPORTANT]
 ====
-The `factory-pid` property of the metatype must contain either service or source
+The `factory-pid` property of the metatype must contain either service or source in the name
 ====
 
 ===== Catalog Provider
