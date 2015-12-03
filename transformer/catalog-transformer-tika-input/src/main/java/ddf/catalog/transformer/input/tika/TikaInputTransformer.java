@@ -172,9 +172,17 @@ public class TikaInputTransformer implements InputTransformer {
             metacard.setAttribute(new AttributeImpl(Metacard.METADATA, metacardMetadata));
         }
 
-        String lat = metadata.get(Metadata.LATITUDE);
-        String lon = metadata.get(Metadata.LONGITUDE);
-        String wkt = toWkt(lon, lat);
+		String coordinates = metadata.get("Corner Coordinates:");
+		String wkt = null;
+		if (StringUtils.isNotBlank(coordinates)) {
+			String[] lowerLeftCoordinates = getCoordinates(coordinates, "Lower Left").split(",");       
+			String[] upperRightCoordinates = getCoordinates(coordinates, "Upper Right").split(",");
+			wkt = toWkt(lowerLeftCoordinates[1], lowerLeftCoordinates[0], upperRightCoordinates[1], upperRightCoordinates[0]); 
+		} else {
+			String lat = metadata.get(Metadata.LATITUDE);
+			String lon = metadata.get(Metadata.LONGITUDE);
+			wkt = toWkt(lon, lat);
+		}		
 
         if (StringUtils.isNotBlank(wkt)) {
             metacard.setAttribute(new AttributeImpl(Metacard.GEOGRAPHY, wkt));
@@ -188,8 +196,44 @@ public class TikaInputTransformer implements InputTransformer {
         return metacard;
     }
 
-    private String toWkt(String lon, String lat) {
+	private String getCoordinates(String cornerCoordinates, String corner) {
+		int startIndex = cornerCoordinates.indexOf(corner); 
+		StringBuilder coordinates = new StringBuilder();
+		boolean start = false;
+		boolean end = false;
+		if (startIndex != -1) {
+			startIndex += (corner).length();
+			for (int i = startIndex; i < cornerCoordinates.length(); i++) {
+				if (cornerCoordinates.charAt(i) == '(') {
+					start = true;
+				} else if (cornerCoordinates.charAt(i) == ')') {
+					break;
+				} else if (start) {
+					coordinates.append(cornerCoordinates.charAt(i));
+				}
+			}
+		}        
+		return coordinates.toString().trim();
+	}
+	
+	private String toWkt(String lowerLeftLat, String lowerLeftLon, String upperRightLat, String upperRightLon) {	
+        if (StringUtils.isBlank(lowerLeftLat) || StringUtils.isBlank(lowerLeftLon) ||
+		    StringUtils.isBlank(upperRightLat) || StringUtils.isBlank(upperRightLon))  {
+            return null;
+        }
 
+		StringBuilder wkt = new StringBuilder();
+		wkt.append(String.format("POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))",
+				lowerLeftLon, lowerLeftLat,
+				upperRightLon, lowerLeftLat,
+				upperRightLon, upperRightLat, 
+				lowerLeftLon, upperRightLat,
+				lowerLeftLon, lowerLeftLat));
+        LOGGER.debug("wkt: {} ", wkt.toString());				
+		return wkt.toString();
+	}
+	
+    private String toWkt(String lon, String lat) {
         if (StringUtils.isBlank(lon) || StringUtils.isBlank(lat)) {
             return null;
         }
