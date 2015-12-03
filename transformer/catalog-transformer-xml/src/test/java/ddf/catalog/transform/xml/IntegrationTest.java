@@ -1,22 +1,23 @@
 /**
  * Copyright (c) Codice Foundation
- * 
+ * <p/>
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- * 
+ * <p/>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
- * 
- **/
+ */
 package ddf.catalog.transform.xml;
 
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.codice.ddf.parser.Parser;
+import org.codice.ddf.parser.xml.XmlParser;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,17 +38,21 @@ public class IntegrationTest {
 
     @Test
     public void testInputAndOutput() throws CatalogTransformerException, IOException {
-        InputTransformer inputTransformer = new XmlInputTransformer();
-        MetacardTransformer outputTransformer = new XmlMetacardTransformer();
+        Parser parser = new XmlParser();
+
+        InputTransformer inputTransformer = new XmlInputTransformer(parser);
+        MetacardTransformer outputTransformer = new XmlMetacardTransformer(parser);
 
         InputStream input = getClass().getResourceAsStream("/extensibleMetacard.xml");
         Metacard metacard = inputTransformer.transform(input);
 
         LOGGER.info("Attributes: ");
-        for (AttributeDescriptor descriptor : metacard.getMetacardType().getAttributeDescriptors()) {
+        for (AttributeDescriptor descriptor : metacard.getMetacardType()
+                .getAttributeDescriptors()) {
             Attribute attribute = metacard.getAttribute(descriptor.getName());
-            LOGGER.info("\t" + descriptor.getName() + ": "
-                    + ((attribute == null) ? attribute : attribute.getValue()));
+            LOGGER.info("\t" + descriptor.getName() + ": " + ((attribute == null) ?
+                    attribute :
+                    attribute.getValue()));
         }
 
         BinaryContent output = outputTransformer.transform(metacard, null);

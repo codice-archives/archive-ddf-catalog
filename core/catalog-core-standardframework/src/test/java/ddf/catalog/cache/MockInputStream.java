@@ -1,31 +1,30 @@
 /**
  * Copyright (c) Codice Foundation
- * 
+ * <p/>
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- * 
+ * <p/>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
- * 
- **/
+ */
 package ddf.catalog.cache;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MockInputStream extends InputStream {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(MockInputStream.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MockInputStream.class);
 
     private int invocationCount = 0;
 
@@ -35,23 +34,24 @@ public class MockInputStream extends InputStream {
     private int invocationCountToThrowIOException = -1;
 
     private int invocationCountToTimeout = -1;
-    
-    private int readDelay = 0;
-    
+
+    private long readDelay = 0;
+
+    private TimeUnit timeUnit;
+
     private boolean readSlow;
-    
 
     public MockInputStream(String name) {
         this(name, false);
     }
-    
+
     public MockInputStream(String name, boolean readSlow) {
         try {
             this.is = new FileInputStream(name);
         } catch (FileNotFoundException e) {
             LOGGER.error("FileNotFoundException", e);
         }
-        
+
         this.readSlow = readSlow;
     }
 
@@ -63,10 +63,11 @@ public class MockInputStream extends InputStream {
         invocationCountToTimeout = count;
     }
 
-    public void setReadDelay(int delay) {
+    public void setReadDelay(long delay, TimeUnit timeUnit) {
         this.readDelay = delay;
+        this.timeUnit = timeUnit;
     }
-    
+
     @Override
     public int available() throws IOException {
         return is.available();
@@ -86,11 +87,14 @@ public class MockInputStream extends InputStream {
             // By closing stream, when try to read from it an IOException will be thrown.
             is.close();
         } else if (invocationCount == invocationCountToTimeout) {
-            LOGGER.info("Simulating read taking too long by sleeping for {} ms", readDelay);
+            LOGGER.info("Simulating read taking too long by sleeping for {} ms",
+                    timeUnit.toMillis(readDelay));
             try {
                 // Simulates read of InputStream chunk from remote source taking
                 // longer than the timeout for each chunk to be read
-                Thread.sleep(readDelay); 
+                if (readDelay > 0) {
+                    timeUnit.sleep(readDelay);
+                }
             } catch (InterruptedException e) {
                 LOGGER.info("Thread sleep interrupted");
                 return 0;
@@ -100,7 +104,9 @@ public class MockInputStream extends InputStream {
             try {
                 // Slows down reading of product input stream so that client
                 // has time to come up
-                Thread.sleep(readDelay); 
+                if (readDelay > 0) {
+                    timeUnit.sleep(readDelay);
+                }
             } catch (InterruptedException e) {
                 LOGGER.info("Thread sleep interrupted");
                 return 0;

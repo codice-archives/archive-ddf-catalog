@@ -1,29 +1,28 @@
 /**
  * Copyright (c) Codice Foundation
- * 
+ * <p/>
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- * 
+ * <p/>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
- * 
- **/
+ */
 package ddf.catalog.transformer.xml;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.helpers.DefaultValidationEventHandler;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.codice.ddf.parser.Parser;
+import org.codice.ddf.parser.ParserConfigurator;
+import org.codice.ddf.parser.ParserException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,51 +41,47 @@ public class XmlInputTransformer extends AbstractXmlTransformer implements Input
 
     private List<MetacardType> metacardTypes;
 
+    public XmlInputTransformer(Parser parser) {
+        super(parser);
+    }
+
     @Override
     public Metacard transform(InputStream input) throws IOException, CatalogTransformerException {
         return transform(input, null);
     }
 
     @Override
-    public Metacard transform(InputStream input, String id) throws IOException,
-        CatalogTransformerException {
-        Metacard metacard = null;
-        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+    public Metacard transform(InputStream input, String id)
+            throws IOException, CatalogTransformerException {
+        return testXform(input, id);
+    }
+
+    private Metacard testXform(InputStream input, String id)
+            throws IOException, CatalogTransformerException {
+        ParserConfigurator parserConfigurator = getParserConfigurator()
+                .setAdapter(new MetacardTypeAdapter(metacardTypes))
+                .setHandler(new DefaultValidationEventHandler());
+
         try {
+            Metacard metacard = getParser().unmarshal(parserConfigurator, Metacard.class, input);
 
-            Unmarshaller unmarshaller = CONTEXT.createUnmarshaller();
-            unmarshaller.setAdapter(MetacardTypeAdapter.class, new MetacardTypeAdapter(
-                    metacardTypes));
-            unmarshaller.setEventHandler(new DefaultValidationEventHandler());
-            try {
-                metacard = (Metacard) unmarshaller.unmarshal(input);
-                if (!StringUtils.isEmpty(id)) {
-                    metacard.setAttribute(new AttributeImpl(Metacard.ID, id));
-                }
-            } catch (RuntimeException e) {
-                // JAXB likes to throw RuntimeExceptions and we don't want to
-                // bubble those up.
-                LOGGER.debug("Caught RuntimeException during JAXB Transformation", e);
-                throw new CatalogTransformerException(FAILED_TRANSFORMATION, e);
+            if (metacard == null) {
+                throw new CatalogTransformerException(FAILED_TRANSFORMATION);
             }
-        } catch (JAXBException e) {
-            LOGGER.debug("Caught JAXBException during JAXB Transformation");
+
+            if (!StringUtils.isEmpty(id)) {
+                metacard.setAttribute(new AttributeImpl(Metacard.ID, id));
+            }
+
+            return metacard;
+        } catch (ParserException e) {
+            LOGGER.error("Error parsing metacard", e);
             throw new CatalogTransformerException(FAILED_TRANSFORMATION, e);
-        } finally {
-            Thread.currentThread().setContextClassLoader(tccl);
-            IOUtils.closeQuietly(input);
         }
-
-        if (metacard == null) {
-            throw new CatalogTransformerException(FAILED_TRANSFORMATION);
-        }
-
-        return metacard;
     }
 
     /**
-     * @param metacardTypes
-     *            the metacardTypes to set
+     * @param metacardTypes the metacardTypes to set
      */
     public void setMetacardTypes(List<MetacardType> metacardTypes) {
         this.metacardTypes = metacardTypes;

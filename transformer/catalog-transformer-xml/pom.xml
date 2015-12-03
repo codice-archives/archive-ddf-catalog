@@ -12,7 +12,9 @@
  *
  **/
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -39,6 +41,13 @@
         </dependency>
 
         <dependency>
+            <groupId>ddf.platform</groupId>
+            <artifactId>platform-parser-xml</artifactId>
+            <version>2.8.0-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
             <groupId>ddf.catalog.core</groupId>
             <artifactId>catalog-core-commons</artifactId>
             <scope>test</scope>
@@ -60,6 +69,16 @@
             <groupId>ddf.catalog.transformer</groupId>
             <artifactId>catalog-transformer-xml-binding</artifactId>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
         </dependency>
 
         <dependency>
@@ -89,7 +108,11 @@
                 <configuration>
                     <instructions>
                         <Embed-Dependency>
-                            ogc-tools-gml-jts,catalog-transformer-xml-binding,jaxb2-basics-runtime,gml-v_3_1_1-schema;inline=true
+                            guava,
+                            ogc-tools-gml-jts,
+                            catalog-transformer-xml-binding,
+                            jaxb2-basics-runtime,
+                            gml-v_3_1_1-schema;inline=true
                         </Embed-Dependency>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Name>${project.name}</Bundle-Name>
@@ -100,10 +123,10 @@
                             ddf.catalog.operation.impl,
                             ddf.catalog.util.impl
                         </Private-Package>
-                        <Export-Package />
+                        <Export-Package/>
                         <Import-Package>
-                            *,
-                            org.joda.time;version="[1.6.0,3.0.0)"
+                            org.joda.time;version="[1.6.0,3.0.0)",
+                            *
                         </Import-Package>
                     </instructions>
                 </configuration>
@@ -149,6 +172,81 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.lazerycode.jmeter</groupId>
+                <artifactId>jmeter-maven-plugin</artifactId>
+                <version>1.10.1</version>
+                <configuration>
+                    <testResultsTimestamp>false</testResultsTimestamp>
+                    <overrideRootLogLevel>DEBUG</overrideRootLogLevel>
+                    <suppressJMeterOutput>false</suppressJMeterOutput>
+                    <ignoreResultFailures>true</ignoreResultFailures>
+
+                    <testFilesIncluded>
+                        <testFilesIncluded>XMLTransformerPerformance.jmx</testFilesIncluded>
+                    </testFilesIncluded>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>kg.apc</groupId>
+                        <artifactId>jmeter-plugins</artifactId>
+                        <version>1.0.0</version>
+                        <exclusions>
+                            <!--
+                               Unfortunately some transitive dependencies cannot be found on mvncentral
+                               and we have to explicitly exclude them.
+                               For a complete list, see https://github.com/mlex/jmeter-maven-example/
+                           -->
+                            <exclusion>
+                                <groupId>kg.apc</groupId>
+                                <artifactId>perfmon</artifactId>
+                            </exclusion>
+                            <!-- ... -->
+
+                            <!--
+                                Because of a bug in the jmeter-maven-plugin (see
+                                https://github.com/Ronnie76er/jmeter-maven-plugin/issues/77) we have to
+                                exclude jmeter dependencies here, too.
+                            -->
+                            <exclusion>
+                                <groupId>org.apache.jmeter</groupId>
+                                <artifactId>jorphan</artifactId>
+                            </exclusion>
+                            <!-- ... -->
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>de.codecentric</groupId>
+                <artifactId>jmeter-graph-maven-plugin</artifactId>
+                <version>0.1.0</version>
+                <configuration>
+                    <inputFile>${project.build.directory}/jmeter/results/XMLTransformerPerformance.jtl</inputFile>
+                    <graphs>
+                        <!-- ... you can declare more <graph>-elements here -->
+                        <graph>
+                            <pluginType>BytesThroughputOverTime</pluginType>
+                            <width>800</width>
+                            <height>600</height>
+                            <outputFile>${project.build.directory}/jmeter/results/XMLTransformerPerformance2-bytes.png</outputFile>
+                        </graph>
+                        <graph>
+                            <pluginType>ThroughputVsThreads</pluginType>
+                            <width>800</width>
+                            <height>600</height>
+                            <outputFile>${project.build.directory}/jmeter/results/XMLTransformerPerformance2-thruvthreads.png</outputFile>
+                        </graph>
+                        <graph>
+                            <pluginType>TimesVsThreads</pluginType>
+                            <width>800</width>
+                            <height>600</height>
+                            <outputFile>${project.build.directory}/jmeter/results/XMLTransformerPerformance2-timevthreads.png</outputFile>
+                        </graph>
+
+                    </graphs>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -1,22 +1,22 @@
 /**
  * Copyright (c) Codice Foundation
- * 
+ * <p/>
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- * 
+ * <p/>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
- * 
- **/
+ */
 package ddf.catalog.metrics;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 import org.codice.ddf.configuration.ConfigurationManager;
@@ -26,6 +26,7 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SlidingTimeWindowReservoir;
 
 import ddf.catalog.federation.FederationException;
 import ddf.catalog.filter.FilterAdapter;
@@ -47,13 +48,14 @@ import ddf.catalog.source.UnsupportedQueryException;
 
 /**
  * Catalog plug-in to capture metrics on catalog operations.
- * 
+ *
  * @author Phillip Klinefelter
  * @author ddf.isgs@lmco.com
- * 
+ *
  */
-public final class CatalogMetrics implements PreQueryPlugin, PostQueryPlugin, PostIngestPlugin,
-        PostResourcePlugin, ConfigurationWatcher {
+public final class CatalogMetrics
+        implements PreQueryPlugin, PostQueryPlugin, PostIngestPlugin, PostResourcePlugin,
+        ConfigurationWatcher {
 
     protected static final String EXCEPTIONS_SCOPE = "Exceptions";
 
@@ -67,10 +69,6 @@ public final class CatalogMetrics implements PreQueryPlugin, PostQueryPlugin, Po
 
     protected final JmxReporter reporter = JmxReporter.forRegistry(metrics)
             .inDomain("ddf.metrics.catalog").build();
-
-    private FilterAdapter filterAdapter;
-
-    private String localSourceId;
 
     protected final Histogram resultCount;
 
@@ -104,11 +102,15 @@ public final class CatalogMetrics implements PreQueryPlugin, PostQueryPlugin, Po
 
     protected final Meter resourceRetrival;
 
+    private FilterAdapter filterAdapter;
+
+    private String localSourceId;
+
     public CatalogMetrics(FilterAdapter filterAdapter) {
 
         this.filterAdapter = filterAdapter;
 
-        resultCount = metrics.histogram(MetricRegistry.name(QUERIES_SCOPE, "TotalResults"));
+        resultCount = metrics.register(MetricRegistry.name(QUERIES_SCOPE, "TotalResults"), new Histogram(new SlidingTimeWindowReservoir(1, TimeUnit.MINUTES)));
 
         queries = metrics.meter(MetricRegistry.name(QUERIES_SCOPE));
         federatedQueries = metrics.meter(MetricRegistry.name(QUERIES_SCOPE, "Federated"));
@@ -119,10 +121,10 @@ public final class CatalogMetrics implements PreQueryPlugin, PostQueryPlugin, Po
         temporalQueries = metrics.meter(MetricRegistry.name(QUERIES_SCOPE, "Temporal"));
 
         exceptions = metrics.meter(MetricRegistry.name(EXCEPTIONS_SCOPE));
-        unsupportedQueryExceptions = metrics.meter(MetricRegistry.name(EXCEPTIONS_SCOPE,
-                "UnsupportedQuery"));
-        sourceUnavailableExceptions = metrics.meter(MetricRegistry.name(EXCEPTIONS_SCOPE,
-                "SourceUnavailable"));
+        unsupportedQueryExceptions = metrics
+                .meter(MetricRegistry.name(EXCEPTIONS_SCOPE, "UnsupportedQuery"));
+        sourceUnavailableExceptions = metrics
+                .meter(MetricRegistry.name(EXCEPTIONS_SCOPE, "SourceUnavailable"));
         federationExceptions = metrics.meter(MetricRegistry.name(EXCEPTIONS_SCOPE, "Federation"));
 
         createdMetacards = metrics.meter(MetricRegistry.name(INGEST_SCOPE, "Created"));
@@ -136,8 +138,8 @@ public final class CatalogMetrics implements PreQueryPlugin, PostQueryPlugin, Po
 
     // PostQuery
     @Override
-    public QueryResponse process(QueryResponse input) throws PluginExecutionException,
-        StopProcessingException {
+    public QueryResponse process(QueryResponse input)
+            throws PluginExecutionException, StopProcessingException {
         resultCount.update(input.getHits());
         recordSourceQueryExceptions(input);
 
@@ -146,8 +148,8 @@ public final class CatalogMetrics implements PreQueryPlugin, PostQueryPlugin, Po
 
     // PreQuery
     @Override
-    public QueryRequest process(QueryRequest input) throws PluginExecutionException,
-        StopProcessingException {
+    public QueryRequest process(QueryRequest input)
+            throws PluginExecutionException, StopProcessingException {
         if (isFederated(input)) {
             federatedQueries.mark();
         }
@@ -201,8 +203,8 @@ public final class CatalogMetrics implements PreQueryPlugin, PostQueryPlugin, Po
 
     // PostResource
     @Override
-    public ResourceResponse process(ResourceResponse input) throws PluginExecutionException,
-        StopProcessingException {
+    public ResourceResponse process(ResourceResponse input)
+            throws PluginExecutionException, StopProcessingException {
         resourceRetrival.mark();
         return input;
     }
@@ -241,9 +243,8 @@ public final class CatalogMetrics implements PreQueryPlugin, PostQueryPlugin, Po
         } else if (sourceIds == null) {
             return false;
         } else {
-            return (sourceIds.size() > 1)
-                    || (sourceIds.size() == 1 && !sourceIds.contains("")
-                            && !sourceIds.contains(null) && !sourceIds.contains(localSourceId));
+            return (sourceIds.size() > 1) || (sourceIds.size() == 1 && !sourceIds.contains("")
+                    && !sourceIds.contains(null) && !sourceIds.contains(localSourceId));
         }
     }
 

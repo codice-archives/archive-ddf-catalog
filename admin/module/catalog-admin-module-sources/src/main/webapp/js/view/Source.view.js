@@ -56,16 +56,11 @@ function (ich,Marionette,_,$,Q,ModalSource,EmptyView,Service,Status,wreqr,Utils,
         initialize: function(){
             _.bindAll(this);
             this.listenTo(this.model, 'change', this.render);
-            this.listenTo(wreqr.vent, 'status:update', this.updateStatus);
-            this.getInitialStatuses();
-        },
-        getInitialStatuses: function() {
-            var statusModel = new Status.List();
-            statusModel.fetch({
-                success: function() {
-                    wreqr.vent.trigger('status:update', statusModel);
-                }
-            });
+
+            if (this.model.has('currentConfiguration')) {
+                this.listenTo(wreqr.vent, 'status:update-'+ this.model.attributes.currentConfiguration.id, this.updateStatus);
+            }
+
         },
         serializeData: function(){
             var data = {};
@@ -122,19 +117,9 @@ function (ich,Marionette,_,$,Q,ModalSource,EmptyView,Service,Status,wreqr,Utils,
             wreqr.vent.trigger('refreshSources');
             evt.stopPropagation();
         },
-        updateStatus: function(statusList) {
-            var model = this.model;
-            var currentStatus = statusList.find(function(status) {
-                return status.id === model.id;
-            });
-            var available = model.get('available');
-            if (currentStatus) {
-                var curAvail = currentStatus.get('available');
-                if (available !== curAvail) {
-                    model.set('available', curAvail);
-                    this.render();
-                }
-            }
+        updateStatus: function(status) {
+            this.model.set('available', status.get('value'));
+            this.render();
         }
     });
 
@@ -187,7 +172,7 @@ function (ich,Marionette,_,$,Q,ModalSource,EmptyView,Service,Status,wreqr,Utils,
             });
         },
         editSource: function(model) {
-            wreqr.vent.trigger("showModal", 
+            wreqr.vent.trigger("showModal",
                 new ModalSource.View({
                     model: model,
                     parentModel: this.model,
@@ -197,7 +182,7 @@ function (ich,Marionette,_,$,Q,ModalSource,EmptyView,Service,Status,wreqr,Utils,
         },
         removeSource: function() {
             if(this.model) {
-                wreqr.vent.trigger("showModal", 
+                wreqr.vent.trigger("showModal",
                     new SourceView.DeleteModal({
                         model: this.model,
                         collection: this.model.get('collection')
@@ -207,7 +192,7 @@ function (ich,Marionette,_,$,Q,ModalSource,EmptyView,Service,Status,wreqr,Utils,
         },
         addSource: function() {
             if(this.model) {
-                wreqr.vent.trigger("showModal", 
+                wreqr.vent.trigger("showModal",
                     new ModalSource.View({
                         model: this.model.getSourceModelWithServices(),
                         parentModel: this.model,

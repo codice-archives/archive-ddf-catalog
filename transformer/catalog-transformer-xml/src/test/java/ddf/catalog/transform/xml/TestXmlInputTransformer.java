@@ -1,17 +1,16 @@
 /**
  * Copyright (c) Codice Foundation
- * 
+ * <p/>
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- * 
+ * <p/>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
- * 
- **/
+ */
 package ddf.catalog.transform.xml;
 
 import static org.hamcrest.Matchers.is;
@@ -28,7 +27,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.codice.ddf.parser.xml.XmlParser;
 import org.geotools.data.Base64;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,62 +47,71 @@ public class TestXmlInputTransformer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestXmlInputTransformer.class);
 
+    private XmlInputTransformer xit;
+
+    @Before
+    public void setup() {
+        xit = new XmlInputTransformer(new XmlParser());
+    }
+
     @Test
-    public void testTransformWithInvalidMetacardType() throws IOException,
-        CatalogTransformerException {
-        XmlInputTransformer xit = new XmlInputTransformer();
-        Metacard metacard = xit.transform(new FileInputStream(
-                "src/test/resources/invalidExtensibleMetacard.xml"));
+    public void testTransformWithInvalidMetacardType()
+            throws IOException, CatalogTransformerException {
+        Metacard metacard = xit
+                .transform(new FileInputStream("src/test/resources/invalidExtensibleMetacard.xml"));
 
         LOGGER.info("ID: {}", metacard.getId());
         LOGGER.info("Type: {}", metacard.getMetacardType().getName());
         LOGGER.info("Source: {}", metacard.getSourceId());
         LOGGER.info("Attributes: ");
-        for (AttributeDescriptor descriptor : metacard.getMetacardType().getAttributeDescriptors()) {
+        for (AttributeDescriptor descriptor : metacard.getMetacardType()
+                .getAttributeDescriptors()) {
             Attribute attribute = metacard.getAttribute(descriptor.getName());
-            LOGGER.info("\t" + descriptor.getName() + ": "
-                    + ((attribute == null) ? attribute : attribute.getValue()));
+            LOGGER.info("\t" + descriptor.getName() + ": " + ((attribute == null) ?
+                    attribute :
+                    attribute.getValue()));
         }
 
         assertThat(metacard.getMetacardType().getName(), is(BasicTypes.BASIC_METACARD.getName()));
     }
 
     @Test
-    public void testTransformWithExtensibleMetacardType() throws IOException,
-        CatalogTransformerException {
-        XmlInputTransformer xit = new XmlInputTransformer();
+    public void testTransformWithExtensibleMetacardType()
+            throws IOException, CatalogTransformerException {
         List<MetacardType> metacardTypes = new ArrayList<MetacardType>(1);
         MetacardType extensibleType = new MetacardTypeImpl("extensible.metacard",
                 BasicTypes.BASIC_METACARD.getAttributeDescriptors());
         metacardTypes.add(extensibleType);
         xit.setMetacardTypes(metacardTypes);
-        Metacard metacard = xit.transform(new FileInputStream(
-                "src/test/resources/extensibleMetacard.xml"));
+        Metacard metacard = xit
+                .transform(new FileInputStream("src/test/resources/extensibleMetacard.xml"));
 
         LOGGER.info("ID: {}", metacard.getId());
         LOGGER.info("Type: {}", metacard.getMetacardType().getName());
         LOGGER.info("Source: {}", metacard.getSourceId());
         LOGGER.info("Attributes: ");
-        for (AttributeDescriptor descriptor : metacard.getMetacardType().getAttributeDescriptors()) {
+        for (AttributeDescriptor descriptor : metacard.getMetacardType()
+                .getAttributeDescriptors()) {
             Attribute attribute = metacard.getAttribute(descriptor.getName());
-            LOGGER.info("\t" + descriptor.getName() + ": "
-                    + ((attribute == null) ? attribute : attribute.getValue()));
+            LOGGER.info("\t" + descriptor.getName() + ": " + ((attribute == null) ?
+                    attribute :
+                    attribute.getValue()));
         }
 
     }
 
     @Test
-    public void testSimpleMetadata() throws IOException, CatalogTransformerException,
-        ParseException {
-
-        XmlInputTransformer xit = new XmlInputTransformer();
+    public void testSimpleMetadata()
+            throws IOException, CatalogTransformerException, ParseException {
         Metacard metacard = xit.transform(new FileInputStream("src/test/resources/metacard1.xml"));
 
         LOGGER.info("Attributes: ");
-        for (AttributeDescriptor descriptor : metacard.getMetacardType().getAttributeDescriptors()) {
+        for (AttributeDescriptor descriptor : metacard.getMetacardType()
+                .getAttributeDescriptors()) {
             Attribute attribute = metacard.getAttribute(descriptor.getName());
-            LOGGER.info("\t" + descriptor.getName() + ": "
-                    + ((attribute == null) ? attribute : attribute.getValue()));
+            LOGGER.info("\t" + descriptor.getName() + ": " + ((attribute == null) ?
+                    attribute :
+                    attribute.getValue()));
         }
 
         LOGGER.info("ID: {}", metacard.getId());
@@ -118,39 +128,39 @@ public class TestXmlInputTransformer {
 
         assertEquals("Title!", metacard.getAttribute(Metacard.TITLE).getValue());
 
-        assertArrayEquals(
-                Base64.decode("AAABAAABAQEAAQAAAQEBAAEAAAEBAQABAAABAQEAAQAAAQEBAAEAAAEBAQABAAABAQE="),
+        assertArrayEquals(Base64.decode(
+                        "AAABAAABAQEAAQAAAQEBAAEAAAEBAQABAAABAQEAAQAAAQEBAAEAAAEBAQABAAABAQE="),
                 (byte[]) metacard.getAttribute(Metacard.THUMBNAIL).getValue());
 
         // TODO use XMLUnit to test equivalence
         assertThat(metacard.getAttribute(Metacard.METADATA).getValue().toString(),
                 startsWith("<foo xmlns=\"http://foo.com\">"));
 
-        assertEquals(
-                (new SimpleDateFormat("MMM d, yyyy HH:mm:ss.SSS z"))
+        assertEquals((new SimpleDateFormat("MMM d, yyyy HH:mm:ss.SSS z"))
                         .parse("Dec 27, 2012 16:31:01.641 MST"),
                 metacard.getAttribute(Metacard.EXPIRATION).getValue());
     }
 
     @Test
-    public void testFallbackToBasicMetacardForUnknowMetacardType() throws FileNotFoundException,
-        IOException, CatalogTransformerException, ParseException {
-        XmlInputTransformer xit = new XmlInputTransformer();
+    public void testFallbackToBasicMetacardForUnknowMetacardType()
+            throws FileNotFoundException, IOException, CatalogTransformerException, ParseException {
         List<MetacardType> metacardTypes = new ArrayList<MetacardType>(1);
         metacardTypes.add(BasicTypes.BASIC_METACARD);
         xit.setMetacardTypes(metacardTypes);
 
-        Metacard metacard = xit.transform(new FileInputStream(
-                "src/test/resources/unknownMetacard1.xml"));
+        Metacard metacard = xit
+                .transform(new FileInputStream("src/test/resources/unknownMetacard1.xml"));
 
         LOGGER.info("ID: {}", metacard.getId());
         LOGGER.info("Type: {}", metacard.getMetacardType().getName());
         LOGGER.info("Source: {}", metacard.getSourceId());
         LOGGER.info("Attributes: ");
-        for (AttributeDescriptor descriptor : metacard.getMetacardType().getAttributeDescriptors()) {
+        for (AttributeDescriptor descriptor : metacard.getMetacardType()
+                .getAttributeDescriptors()) {
             Attribute attribute = metacard.getAttribute(descriptor.getName());
-            LOGGER.info("\t" + descriptor.getName() + ": "
-                    + ((attribute == null) ? attribute : attribute.getValue()));
+            LOGGER.info("\t" + descriptor.getName() + ": " + ((attribute == null) ?
+                    attribute :
+                    attribute.getValue()));
         }
 
         assertThat(metacard.getMetacardType().getName(), is(BasicTypes.BASIC_METACARD.getName()));
@@ -163,15 +173,14 @@ public class TestXmlInputTransformer {
 
         assertThat("Title!", is(metacard.getAttribute(Metacard.TITLE).getValue()));
 
-        assertArrayEquals(
-                Base64.decode("AAABAAABAQEAAQAAAQEBAAEAAAEBAQABAAABAQEAAQAAAQEBAAEAAAEBAQABAAABAQE="),
+        assertArrayEquals(Base64.decode(
+                        "AAABAAABAQEAAQAAAQEBAAEAAAEBAQABAAABAQEAAQAAAQEBAAEAAAEBAQABAAABAQE="),
                 (byte[]) metacard.getAttribute(Metacard.THUMBNAIL).getValue());
 
         assertThat(metacard.getAttribute(Metacard.METADATA).getValue().toString(),
                 startsWith("<foo xmlns=\"http://foo.com\">"));
 
-        assertThat(
-                (new SimpleDateFormat("MMM d, yyyy HH:mm:ss.SSS z"))
+        assertThat((new SimpleDateFormat("MMM d, yyyy HH:mm:ss.SSS z"))
                         .parse("Dec 27, 2012 16:31:01.641 MST"),
                 is(metacard.getAttribute(Metacard.EXPIRATION).getValue()));
     }

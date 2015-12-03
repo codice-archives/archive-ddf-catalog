@@ -1,34 +1,24 @@
 /**
  * Copyright (c) Codice Foundation
- *
+ * <p/>
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- *
+ * <p/>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
- *
- **/
+ */
 package ddf.catalog.source.solr;
 
-import com.spatial4j.core.distance.DistanceUtils;
-import ddf.catalog.data.AttributeType;
-import ddf.catalog.data.Metacard;
-import ddf.catalog.data.MetacardCreationException;
-import ddf.catalog.data.MetacardType;
-import ddf.catalog.data.Result;
-import ddf.catalog.data.impl.MetacardImpl;
-import ddf.catalog.data.impl.ResultImpl;
-import ddf.catalog.filter.FilterAdapter;
-import ddf.catalog.operation.QueryRequest;
-import ddf.catalog.operation.SourceResponse;
-import ddf.catalog.operation.impl.QueryResponseImpl;
-import ddf.catalog.operation.impl.SourceResponseImpl;
-import ddf.catalog.source.UnsupportedQueryException;
-import ddf.measure.Distance;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Transformer;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -46,17 +36,28 @@ import org.opengis.filter.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import com.spatial4j.core.distance.DistanceUtils;
+
+import ddf.catalog.data.AttributeType;
+import ddf.catalog.data.Metacard;
+import ddf.catalog.data.MetacardCreationException;
+import ddf.catalog.data.MetacardType;
+import ddf.catalog.data.Result;
+import ddf.catalog.data.impl.MetacardImpl;
+import ddf.catalog.data.impl.ResultImpl;
+import ddf.catalog.filter.FilterAdapter;
+import ddf.catalog.operation.QueryRequest;
+import ddf.catalog.operation.SourceResponse;
+import ddf.catalog.operation.impl.QueryResponseImpl;
+import ddf.catalog.operation.impl.SourceResponseImpl;
+import ddf.catalog.source.UnsupportedQueryException;
+import ddf.measure.Distance;
 
 public class SolrMetacardClient {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SolrMetacardClient.class);
-
     protected static final String RELEVANCE_SORT_FIELD = "score";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SolrMetacardClient.class);
 
     private static final String QUOTE = "\"";
 
@@ -69,8 +70,8 @@ public class SolrMetacardClient {
     private final DynamicSchemaResolver resolver;
 
     public SolrMetacardClient(SolrServer solrServer, FilterAdapter catalogFilterAdapter,
-            SolrFilterDelegateFactory solrFilterDelegateFactory, DynamicSchemaResolver
-            dynamicSchemaResolver) {
+            SolrFilterDelegateFactory solrFilterDelegateFactory,
+            DynamicSchemaResolver dynamicSchemaResolver) {
         server = solrServer;
         filterDelegateFactory = solrFilterDelegateFactory;
         filterAdapter = catalogFilterAdapter;
@@ -94,8 +95,8 @@ public class SolrMetacardClient {
 
             for (SolrDocument doc : docs) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("SOLR DOC: {}", doc.getFieldValue(Metacard.ID + SchemaFields
-                            .TEXT_SUFFIX));
+                    LOGGER.debug("SOLR DOC: {}",
+                            doc.getFieldValue(Metacard.ID + SchemaFields.TEXT_SUFFIX));
                 }
                 ResultImpl tmpResult;
                 try {
@@ -125,8 +126,33 @@ public class SolrMetacardClient {
         return sourceResponseImpl;
     }
 
+    public List<Metacard> query(String queryString) throws UnsupportedQueryException {
+        SolrQuery query = new SolrQuery();
+        query.setQuery(queryString);
+        try {
+            QueryResponse solrResponse = server.query(query, SolrRequest.METHOD.POST);
+            SolrDocumentList docs = solrResponse.getResults();
+
+            List<Metacard> results = new ArrayList<>();
+            for (SolrDocument doc : docs) {
+                try {
+                    results.add(createMetacard(doc));
+                } catch (MetacardCreationException e) {
+                    LOGGER.warn("Metacard creation exception creating result", e);
+                    throw new UnsupportedQueryException("Could not create metacard(s).");
+                }
+            }
+
+            return results;
+        } catch (SolrServerException e) {
+            LOGGER.warn("Failure in Solr server query.", e);
+            throw new UnsupportedQueryException("Could not complete solr query.");
+        }
+
+    }
+
     protected SolrQuery getSolrQuery(QueryRequest request, SolrFilterDelegate solrFilterDelegate)
-            throws UnsupportedQueryException {
+        throws UnsupportedQueryException {
         solrFilterDelegate.setSortPolicy(request.getQuery().getSortBy());
         SolrQuery query = filterAdapter.adapt(request.getQuery(), solrFilterDelegate);
 
@@ -177,7 +203,8 @@ public class SolrMetacardClient {
                 query.addSort(RELEVANCE_SORT_FIELD, order);
             } else if (sortProperty.equals(Result.TEMPORAL)) {
                 query.addSort(
-                        resolver.getField(Metacard.EFFECTIVE, AttributeType.AttributeFormat.DATE, false), order);
+                        resolver.getField(Metacard.EFFECTIVE, AttributeType.AttributeFormat.DATE,
+                                false), order);
             } else {
                 List<String> resolvedProperties = resolver.getAnonymousField(sortProperty);
 
@@ -200,7 +227,7 @@ public class SolrMetacardClient {
     }
 
     private ResultImpl createResult(SolrDocument doc, String sortProperty)
-            throws MetacardCreationException {
+        throws MetacardCreationException {
         ResultImpl result = new ResultImpl(createMetacard(doc));
 
         if (doc.get(RELEVANCE_SORT_FIELD) != null) {
@@ -234,8 +261,8 @@ public class SolrMetacardClient {
 
         for (String solrFieldName : doc.getFieldNames()) {
             if (!resolver.isPrivateField(solrFieldName)) {
-                Serializable value = resolver.getDocValue(solrFieldName,
-                        doc.getFieldValue(solrFieldName));
+                Serializable value = resolver
+                        .getDocValue(solrFieldName, doc.getFieldValue(solrFieldName));
                 metacard.setAttribute(resolver.resolveFieldName(solrFieldName), value);
             }
         }
@@ -244,7 +271,7 @@ public class SolrMetacardClient {
     }
 
     public List<SolrInputDocument> add(List<Metacard> metacards, boolean forceAutoCommit)
-            throws IOException, SolrServerException, MetacardCreationException {
+        throws IOException, SolrServerException, MetacardCreationException {
         if (metacards == null || metacards.size() == 0) {
             return null;
         }
@@ -264,7 +291,7 @@ public class SolrMetacardClient {
     }
 
     protected SolrInputDocument getSolrInputDocument(Metacard metacard)
-            throws MetacardCreationException {
+        throws MetacardCreationException {
         SolrInputDocument solrInputDocument = new SolrInputDocument();
 
         resolver.addFields(metacard, solrInputDocument);
@@ -295,6 +322,10 @@ public class SolrMetacardClient {
         }
     }
 
+    public void deleteByQuery(String query) throws IOException, SolrServerException {
+        server.deleteByQuery(query);
+    }
+
     public String getIdentifierQuery(String fieldName, List<? extends Serializable> identifiers) {
         StringBuilder queryBuilder = new StringBuilder();
         for (Serializable id : identifiers) {
@@ -311,9 +342,9 @@ public class SolrMetacardClient {
             List<SolrInputDocument> docs) throws SolrServerException, IOException {
         return new org.apache.solr.client.solrj.request.UpdateRequest().add(docs)
                 .setAction(AbstractUpdateRequest.ACTION.COMMIT,
-                        /* waitForFlush */ true,
-                        /* waitToMakeVisible */ true,
-                        /* softCommit */ true).process(server);
+                /* waitForFlush */true,
+                /* waitToMakeVisible */true,
+                /* softCommit */true).process(server);
     }
 
 }
