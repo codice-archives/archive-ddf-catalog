@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "lodash": "2.4.1",
-    "http-proxy": "0.10.0",
+    "http-proxy": "1.18.1",
     "express": "~3.3.4",
     "node-fs": "0.1.7",
     "node-options": "0.0.3",
