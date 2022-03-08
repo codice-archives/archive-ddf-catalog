@@ -29,7 +29,7 @@
     <packaging>bundle</packaging>
 
     <properties>
-        <poi.version>3.11-beta2</poi.version>
+        <poi.version>5.2.1</poi.version>
     </properties>
 
     <dependencies>
